@@ -1,4 +1,4 @@
-# 📺 录制监控矩阵 (Recording Matrix)
+# 📺 轻量直播监控脚本
 
 一个完全使用AI编译，基于 `yt-dlp` 的自动化直播回放监控脚本工具，带有网页管理界面。
 
@@ -29,7 +29,7 @@ winget install OpenJS.NodeJS
 ```shell
 pip install -U yt-dlp
 ```
-### 安装本项目
+# 安装本项目
 
 ```shell
 git clone https://github.com/AMYdd00/yt-dlp-easyuse.git ./yt-dlp-easyuse/
