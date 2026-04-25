@@ -1,6 +1,6 @@
 # 📺 录制监控矩阵 (Recording Matrix)
 
-一个基于 `yt-dlp` 的自动化直播回放监控脚本工具，带有网页管理界面。
+一个完全使用AI编译，基于 `yt-dlp` 的自动化直播回放监控脚本工具，带有网页管理界面。
 
 # 🛠️ 环境一键安装
 
@@ -48,6 +48,20 @@ git clone https://github.com/AMYdd00/yt-dlp-easyuse.git ./yt-dlp-easyuse/
 - **重复检查**：系统自动维护 `archive.txt` 库，下载过的视频不会二次抓取。
 - **静默后台**：监控窗口仅显示关键动态，Web 访问日志已静默处理。
 
+## 📝 TODO
+
+- [ ] 一键打开下载目录
+- [ ] 添加一次性下载录播选项
+- [ ] 整合AI识别翻译功能
+
+
 ## ⚠️ 常见问题
 - **无法下载**：请确认 `run.bat` 中的代理端口与你的科学上网软件一致。
 - **网页打不开**：确保安装了 `pip install flask`，且 38848 端口未被占用。
+
+## 💖 鸣谢 (Credits / Acknowledgements)
+
+- [yt-dlp](https://github.com) - 核心下载引擎
+- [FFmpeg](https://ffmpeg.org) - 强大的音视频处理工具
+- [Gemini] - 提供所有代码
+
