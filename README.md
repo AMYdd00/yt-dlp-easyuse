@@ -52,7 +52,7 @@ git clone https://github.com/AMYdd00/yt-dlp-easyuse.git ./yt-dlp-easyuse/
 
 - [ ] 一键打开下载目录
 - [ ] 添加一次性下载录播选项
-- [ ] 整合AI识别翻译功能
+- [ ] 整合AI识别生成字幕并翻译功能
 
 
 ## ⚠️ 常见问题
