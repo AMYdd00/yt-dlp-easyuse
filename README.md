@@ -57,7 +57,11 @@ git clone https://github.com/AMYdd00/yt-dlp-easyuse.git ./yt-dlp-easyuse/
 
 ## ⚠️ 常见问题
 - **无法下载**：请确认 `run.bat` 中的代理端口与你的科学上网软件一致。
-- **网页打不开**：确保安装了 `pip install flask`，且 38848 端口未被占用。
+- **网页打不开**：确保安装
+```shell
+pip install flask
+```
+且 38848 端口未被占用。
 
 ## 💖 鸣谢 (Credits / Acknowledgements)
 
