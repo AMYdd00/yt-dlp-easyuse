@@ -63,5 +63,5 @@ git clone https://github.com/AMYdd00/yt-dlp-easyuse.git ./yt-dlp-easyuse/
 
 - [yt-dlp](https://github.com) - 核心下载引擎
 - [FFmpeg](https://ffmpeg.org) - 强大的音视频处理工具
-- [Gemini] - 提供所有代码
+- [Gemini](https://gemini.google.com) - 提供所有代码
 
