@@ -23,13 +23,13 @@ winget install OpenJS.NodeJS
 ```
 > **注意**：安装完成后，请关闭并重启终端，以使环境变量生效。
 
-### 2. 安装 Python 依赖库
+## 2. 安装 Python 依赖库
 
-# 安装 yt-dlp
+### 安装 yt-dlp
 ```shell
 pip install -U yt-dlp
 ```
-# 安装本项目
+### 安装本项目
 
 ```shell
 git clone https://github.com/AMYdd00/yt-dlp-easyuse.git ./yt-dlp-easyuse/
