@@ -32,7 +32,7 @@ pip install -U yt-dlp
 # 安装本项目
 
 ```shell
-git clone https://github.com/AMYdd00/yt-dlp-easyuse/ ./yt-dlp-easyuse/
+git clone https://github.com/AMYdd00/yt-dlp-easyuse/.git ./yt-dlp-easyuse/
 
 
 ## 🚀 快速启动
