@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>录制监控矩阵</title>
+    <style>
+        :root { 
+            --neon: #4fc3f7; --bg: #0b0e14; --card: #1c2128; 
+            --border: #30363d; --accent: #7928ca; --danger: #ff4d4d;
+        }
+        body { margin: 0; background: var(--bg); color: #adbac7; font-family: 'Segoe UI', system-ui, sans-serif; display: flex; height: 100vh; overflow: hidden; }
+        
+        /* 侧边栏 */
+        .sidebar { width: 280px; background: #0d1117; border-right: 1px solid var(--border); padding: 20px; box-sizing: border-box; display: flex; flex-direction: column; }
+        
+        /* 矩阵网格 */
+        .main { flex: 1; padding: 25px; overflow-y: auto; background: radial-gradient(circle at top right, #161b22, #0b0e14); }
+        #cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+
+        .card { 
+            background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 15px; 
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); position: relative;
+        }
+        .card:hover { border-color: var(--neon); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
+
+        .name { color: #fff; font-size: 1rem; font-weight: 600; margin-bottom: 5px; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .status-txt { font-size: 12px; color: #768390; margin-bottom: 8px; }
+
+        /* 紧凑型日志窗 */
+        .log-box { 
+            background: #000000; color: #a5d6ff; font-family: 'Cascadia Code', 'Consolas', monospace; 
+            font-size: 10px; padding: 8px; height: 80px; overflow-y: auto; border-radius: 4px; 
+            line-height: 1.4; border: 1px solid #222;
+        }
+
+        .prog-bg { background: #2d333b; height: 4px; border-radius: 2px; overflow: hidden; margin: 12px 0; }
+        .prog-fill { background: linear-gradient(90deg, var(--accent), var(--neon)); height: 100%; width: 0%; transition: width 0.5s ease; }
+
+        input { width: 100%; background: #22272e; border: 1px solid var(--border); color: #fff; padding: 10px; border-radius: 6px; box-sizing: border-box; margin-bottom: 10px; outline: none; }
+        input:focus { border-color: var(--neon); }
+        button { background: var(--neon); color: #000; border: none; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; }
+        
+        .url-item { 
+            background: #22272e; padding: 8px 12px; border-radius: 6px; margin-bottom: 6px; font-size: 12px; 
+            display: flex; justify-content: space-between; align-items: center; border: 1px solid transparent; 
+        }
+        .del-btn { color: #768390; cursor: pointer; padding: 2px 6px; border-radius: 4px; font-size: 14px; }
+        .del-btn:hover { color: var(--danger); background: rgba(255, 77, 77, 0.1); }
+        
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <h3 style="color:#fff; margin-top:0">📡 直播间监控</h3>
+        <input type="text" id="urlInp" placeholder="粘贴链接并按回车..." autocomplete="off">
+        <button onclick="addUrl()">添加直播链接</button>
+        <h4 style="margin-top:30px; font-size: 11px; color: #768390; text-transform: uppercase; letter-spacing: 1px;">监控列表</h4>
+        <div id="urlList" style="overflow-y: auto; flex: 1;"></div>
+    </div>
+    <div class="main">
+        <h2 style="margin-top:0; font-size: 1.5rem; color: #fff;">录制矩阵状态 <span style="font-size: 12px; color: var(--neon); font-weight: normal; margin-left: 10px;">● 系统活跃</span></h2>
+        <div id="cards"></div>
+    </div>
+
+    <script>
+        async function update() {
+            try {
+                const [resS, resL] = await Promise.all([fetch('/api/status'), fetch('/api/list')]);
+                const status = await resS.json();
+                const list = await resL.json();
+
+                // 侧边栏列表显示优化
+                document.getElementById('urlList').innerHTML = list.map((u, i) => {
+                    let name = u.includes('@') ? u.match(/@([^/\?]+)/)?.[1] : u.split('/').filter(Boolean).pop();
+                    if (!name) name = "未知频道";
+                    return `<div class="url-item">
+                        <span title="${u}">${name}</span>
+                        <span class="del-btn" onclick="delUrl(${i})">✕</span>
+                    </div>`
+                }).join('');
+
+                const container = document.getElementById('cards');
+                const activeIds = status.map(s => 'card-' + btoa(encodeURIComponent(s.id)).replace(/=/g, ''));
+                Array.from(container.children).forEach(c => { if (!activeIds.includes(c.id)) c.remove(); });
+
+                for (const s of status) {
+                    const safeId = btoa(encodeURIComponent(s.id)).replace(/=/g, ''); 
+                    let card = document.getElementById(`card-${safeId}`);
+                    if (!card) {
+                        container.insertAdjacentHTML('beforeend', `<div class="card" id="card-${safeId}">
+                            <span class="name">${s.id}</span>
+                            <div class="status-txt" id="txt-${safeId}">同步中...</div>
+                            <div class="prog-bg"><div class="prog-fill" id="bar-${safeId}"></div></div>
+                            <div class="log-box" id="log-${safeId}"></div>
+                        </div>`);
+                    }
+                    const logRes = await fetch('/api/log/' + s.id);
+                    const logTxt = await logRes.text();
+                    const logDiv = document.getElementById(`log-${safeId}`);
+                    logDiv.innerText = logTxt;
+                    logDiv.scrollTop = logDiv.scrollHeight;
+
+                    const pMatch = s.raw.match(/(\d+\.?\d*)%/);
+                    document.getElementById(`bar-${safeId}`).style.width = (pMatch ? pMatch[1] : 0) + '%';
+                    document.getElementById(`txt-${safeId}`).innerText = s.status;
+                }
+            } catch (e) {}
+        }
+
+        async function addUrl() {
+            const inp = document.getElementById('urlInp'); if(!inp.value) return;
+            const cur = await (await fetch('/api/list')).json();
+            cur.push(inp.value); await fetch('/api/update_list', { method: 'POST', body: JSON.stringify(cur) });
+            inp.value = ''; update();
+        }
+
+        async function delUrl(i) {
+            if(!confirm('确定移除？')) return;
+            const cur = await (await fetch('/api/list')).json();
+            cur.splice(i, 1); await fetch('/api/update_list', { method: 'POST', body: JSON.stringify(cur) });
+            update();
+        }
+        setInterval(update, 3000); update();
+    </script>
+</body>
+</html>
