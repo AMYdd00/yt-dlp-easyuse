@@ -3,4 +3,4 @@
 
 安装
 ```shell
-git clone https://github.com/AMYdd00/yt-dlp-easyuse ./yt-dlp-easyuse
+git clone https://github.com/AMYdd00/yt-dlp-easyuse ./yt-dlp-easyuse/
