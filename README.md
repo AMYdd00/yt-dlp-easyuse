@@ -40,8 +40,7 @@ git clone https://github.com/AMYdd00/yt-dlp-easyuse.git ./yt-dlp-easyuse/
 ## 🚀 快速启动
 
 1. **配置代理**：使用记事本打开 `run.bat` 修改你的代理地址（ `--proxy "http://127.0.0.1:7890"`）。
-2. **一键运行**：双击项目根目录下的 **`run.bat`**。
-   - 此时网页后端服务与监控逻辑将同时启动。
+2. **一键运行**：双击项目根目录下的 **`run.bat`**。此时网页后端服务与监控逻辑将同时启动。
 3. **访问管理界面**：在浏览器打开 `http://localhost:38848`。
 4. **添加直播链接**：油管添加直播页面的链接，如“https://www.youtube.com/@necomakarin/streams” 注意最后是streams而不是直播间链接的live
 
