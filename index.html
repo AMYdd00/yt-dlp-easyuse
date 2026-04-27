@@ -2,127 +2,196 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>录制监控矩阵</title>
+    <title>YT-DLP 录制监控矩阵</title>
     <style>
         :root { 
-            --neon: #4fc3f7; --bg: #0b0e14; --card: #1c2128; 
+            --neon: #00f2ff; --bg: #0b0e14; --card: #161b22; 
             --border: #30363d; --accent: #7928ca; --danger: #ff4d4d;
+            --text: #adbac7; --header: #ffffff;
         }
-        body { margin: 0; background: var(--bg); color: #adbac7; font-family: 'Segoe UI', system-ui, sans-serif; display: flex; height: 100vh; overflow: hidden; }
+        body { margin: 0; background: var(--bg); color: var(--text); font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; display: flex; height: 100vh; overflow: hidden; }
         
-        /* 侧边栏 */
-        .sidebar { width: 280px; background: #0d1117; border-right: 1px solid var(--border); padding: 20px; box-sizing: border-box; display: flex; flex-direction: column; }
+        /* 侧边栏优化 */
+        .sidebar { width: 320px; background: #0d1117; border-right: 1px solid var(--border); padding: 25px; box-sizing: border-box; display: flex; flex-direction: column; z-index: 10; }
+        .sidebar h3 { color: var(--header); margin: 0 0 20px 0; display: flex; align-items: center; gap: 8px; font-size: 1.1rem; }
         
-        /* 矩阵网格 */
-        .main { flex: 1; padding: 25px; overflow-y: auto; background: radial-gradient(circle at top right, #161b22, #0b0e14); }
-        #cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+        /* 手动补录面板 */
+        .manual-panel { background: rgba(121, 40, 202, 0.1); border: 1px border var(--accent); border-radius: 10px; padding: 15px; margin-bottom: 25px; border: 1px solid rgba(121, 40, 202, 0.3); }
+        .manual-panel h4 { margin: 0 0 10px 0; color: #d4a5ff; font-size: 12px; text-transform: uppercase; }
 
+        /* 输入框与按钮 */
+        input { width: 100%; background: #010409; border: 1px solid var(--border); color: #fff; padding: 12px; border-radius: 6px; box-sizing: border-box; margin-bottom: 10px; outline: none; transition: all 0.2s; font-size: 13px; }
+        input:focus { border-color: var(--neon); box-shadow: 0 0 8px rgba(0, 242, 255, 0.2); }
+        .btn-main { background: var(--neon); color: #000; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; transition: opacity 0.2s; }
+        .btn-main:hover { opacity: 0.8; }
+        .btn-accent { background: var(--accent); color: #fff; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; margin-bottom: 10px; }
+
+        /* 监控列表 */
+        .url-list-header { font-size: 11px; color: #768390; text-transform: uppercase; letter-spacing: 1px; margin: 20px 0 10px 0; }
+        .url-item { background: #21262d; padding: 10px 12px; border-radius: 6px; margin-bottom: 8px; font-size: 13px; display: flex; justify-content: space-between; align-items: center; border: 1px solid transparent; }
+        .url-item:hover { border-color: #444; }
+        .del-btn { color: #f85149; cursor: pointer; font-weight: bold; padding: 0 5px; }
+
+        /* 主界面网格 */
+        .main { flex: 1; padding: 30px; overflow-y: auto; background: radial-gradient(circle at 50% 0%, #1c2128 0%, #0b0e14 100%); }
+        #cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 25px; }
+
+        /* 卡片设计升级 */
         .card { 
-            background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 15px; 
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); position: relative;
+            background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; 
+            transition: all 0.3s ease; position: relative; overflow: hidden;
         }
-        .card:hover { border-color: var(--neon); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
+        .card::before { content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 2px; background: linear-gradient(90deg, transparent, var(--neon), transparent); opacity: 0; transition: 0.3s; }
+        .card:hover { border-color: #444; transform: translateY(-5px); box-shadow: 0 12px 30px rgba(0,0,0,0.6); }
+        .card:hover::before { opacity: 1; }
 
-        .name { color: #fff; font-size: 1rem; font-weight: 600; margin-bottom: 5px; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .status-txt { font-size: 12px; color: #768390; margin-bottom: 8px; }
+        .name { color: var(--header); font-size: 1.1rem; font-weight: 600; margin-bottom: 8px; display: block; }
+        .status-txt { font-size: 12px; color: var(--neon); margin-bottom: 12px; font-family: monospace; }
 
-        /* 紧凑型日志窗 */
+        /* 日志窗优化 */
         .log-box { 
-            background: #000000; color: #a5d6ff; font-family: 'Cascadia Code', 'Consolas', monospace; 
-            font-size: 10px; padding: 8px; height: 80px; overflow-y: auto; border-radius: 4px; 
-            line-height: 1.4; border: 1px solid #222;
+            background: #000; color: #39d353; font-family: 'Consolas', monospace; 
+            font-size: 11px; padding: 12px; height: 100px; overflow-y: auto; border-radius: 6px; 
+            line-height: 1.5; border: 1px solid #222; scroll-behavior: smooth;
         }
 
-        .prog-bg { background: #2d333b; height: 4px; border-radius: 2px; overflow: hidden; margin: 12px 0; }
-        .prog-fill { background: linear-gradient(90deg, var(--accent), var(--neon)); height: 100%; width: 0%; transition: width 0.5s ease; }
+        /* 进度条动画 */
+        .prog-bg { background: #2d333b; height: 6px; border-radius: 3px; overflow: hidden; margin: 15px 0; }
+        .prog-fill { background: linear-gradient(90deg, var(--accent), var(--neon)); height: 100%; width: 0%; transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 0 10px var(--neon); }
 
-        input { width: 100%; background: #22272e; border: 1px solid var(--border); color: #fff; padding: 10px; border-radius: 6px; box-sizing: border-box; margin-bottom: 10px; outline: none; }
-        input:focus { border-color: var(--neon); }
-        button { background: var(--neon); color: #000; border: none; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; }
-        
-        .url-item { 
-            background: #22272e; padding: 8px 12px; border-radius: 6px; margin-bottom: 6px; font-size: 12px; 
-            display: flex; justify-content: space-between; align-items: center; border: 1px solid transparent; 
-        }
-        .del-btn { color: #768390; cursor: pointer; padding: 2px 6px; border-radius: 4px; font-size: 14px; }
-        .del-btn:hover { color: var(--danger); background: rgba(255, 77, 77, 0.1); }
-        
         ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 10px; }
     </style>
 </head>
 <body>
     <div class="sidebar">
-        <h3 style="color:#fff; margin-top:0">📡 直播间监控</h3>
-        <input type="text" id="urlInp" placeholder="粘贴链接并按回车..." autocomplete="off">
-        <button onclick="addUrl()">添加直播链接</button>
-        <h4 style="margin-top:30px; font-size: 11px; color: #768390; text-transform: uppercase; letter-spacing: 1px;">监控列表</h4>
-        <div id="urlList" style="overflow-y: auto; flex: 1;"></div>
+        <h3><span>📡</span> 控制中心</h3>
+        
+        <div class="manual-panel">
+            <h4>🚀 强制补录 (单视频)</h4>
+            <input type="text" id="manualUrl" placeholder="粘贴视频 URL..." autocomplete="off">
+            <button class="btn-main" onclick="sendManual()">开始补录</button>
+            <div id="manualMsg" style="font-size: 11px; margin-top: 8px; color: var(--neon); display: none;">任务已发送...</div>
+        </div>
+
+        <h4 class="url-list-header">监控频道列表</h4>
+        <input type="text" id="urlInp" placeholder="添加频道 @ID..." autocomplete="off">
+        <button class="btn-accent" onclick="addUrl()">添加监控</button>
+        
+        <div id="urlList" style="overflow-y: auto; flex: 1; margin-top: 10px;"></div>
     </div>
+
     <div class="main">
-        <h2 style="margin-top:0; font-size: 1.5rem; color: #fff;">录制矩阵状态 <span style="font-size: 12px; color: var(--neon); font-weight: normal; margin-left: 10px;">● 系统活跃</span></h2>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+            <h2 style="margin:0; font-size: 1.6rem; color: #fff;">实时监控矩阵</h2>
+            <div id="global-status" style="font-size: 12px; background: rgba(57, 211, 83, 0.1); color: #39d353; padding: 5px 12px; border-radius: 20px; border: 1px solid #39d353;">系统运行中</div>
+        </div>
         <div id="cards"></div>
     </div>
 
     <script>
+        // 1. 实时更新逻辑
         async function update() {
             try {
                 const [resS, resL] = await Promise.all([fetch('/api/status'), fetch('/api/list')]);
                 const status = await resS.json();
                 const list = await resL.json();
 
-                // 侧边栏列表显示优化
+                // 侧边栏列表
                 document.getElementById('urlList').innerHTML = list.map((u, i) => {
                     let name = u.includes('@') ? u.match(/@([^/\?]+)/)?.[1] : u.split('/').filter(Boolean).pop();
-                    if (!name) name = "未知频道";
                     return `<div class="url-item">
-                        <span title="${u}">${name}</span>
+                        <span title="${u}">${name || '未知'}</span>
                         <span class="del-btn" onclick="delUrl(${i})">✕</span>
                     </div>`
                 }).join('');
 
                 const container = document.getElementById('cards');
-                const activeIds = status.map(s => 'card-' + btoa(encodeURIComponent(s.id)).replace(/=/g, ''));
-                Array.from(container.children).forEach(c => { if (!activeIds.includes(c.id)) c.remove(); });
+                const currentCardIds = status.map(s => 'card-' + btoa(encodeURIComponent(s.id)).replace(/=/g, ''));
+                
+                // 清理已停止的任务卡片
+                Array.from(container.children).forEach(c => {
+                    if (!currentCardIds.includes(c.id)) c.remove();
+                });
 
+                // 更新或创建卡片
                 for (const s of status) {
                     const safeId = btoa(encodeURIComponent(s.id)).replace(/=/g, ''); 
                     let card = document.getElementById(`card-${safeId}`);
+                    
                     if (!card) {
-                        container.insertAdjacentHTML('beforeend', `<div class="card" id="card-${safeId}">
-                            <span class="name">${s.id}</span>
-                            <div class="status-txt" id="txt-${safeId}">同步中...</div>
-                            <div class="prog-bg"><div class="prog-fill" id="bar-${safeId}"></div></div>
-                            <div class="log-box" id="log-${safeId}"></div>
-                        </div>`);
+                        container.insertAdjacentHTML('beforeend', `
+                            <div class="card" id="card-${safeId}">
+                                <span class="name">${s.id}</span>
+                                <div class="status-txt" id="txt-${safeId}">${s.status}</div>
+                                <div class="prog-bg"><div class="prog-fill" id="bar-${safeId}"></div></div>
+                                <div class="log-box" id="log-${safeId}"></div>
+                            </div>`);
+                        card = document.getElementById(`card-${safeId}`);
                     }
+
+                    // 进度条逻辑
+                    const pMatch = s.raw.match(/(\d+\.?\d*)%/);
+                    if (pMatch) {
+                        document.getElementById(`bar-${safeId}`).style.width = pMatch[1] + '%';
+                    }
+
+                    document.getElementById(`txt-${safeId}`).innerText = s.status;
+
+                    // 增量日志获取 (为了性能，这里依然获取最后 3000 字节)
                     const logRes = await fetch('/api/log/' + s.id);
                     const logTxt = await logRes.text();
                     const logDiv = document.getElementById(`log-${safeId}`);
-                    logDiv.innerText = logTxt;
-                    logDiv.scrollTop = logDiv.scrollHeight;
-
-                    const pMatch = s.raw.match(/(\d+\.?\d*)%/);
-                    document.getElementById(`bar-${safeId}`).style.width = (pMatch ? pMatch[1] : 0) + '%';
-                    document.getElementById(`txt-${safeId}`).innerText = s.status;
+                    if (logDiv.innerText !== logTxt) {
+                        logDiv.innerText = logTxt;
+                        logDiv.scrollTop = logDiv.scrollHeight;
+                    }
                 }
-            } catch (e) {}
+            } catch (e) { console.error("Update error:", e); }
         }
 
+        // 2. 手动补录逻辑
+        async function sendManual() {
+            const inp = document.getElementById('manualUrl');
+            const msg = document.getElementById('manualMsg');
+            if(!inp.value) return;
+
+            msg.style.display = 'block';
+            msg.innerText = "⏳ 补录任务已提交...";
+            
+            try {
+                await fetch('/api/manual_download', { 
+                    method: 'POST', 
+                    body: JSON.stringify({ url: inp.value.trim() }) 
+                });
+                setTimeout(() => { 
+                    msg.innerText = "✅ 提交成功，请查看 Manual 文件夹"; 
+                    inp.value = '';
+                }, 1000);
+            } catch(e) {
+                msg.innerText = "❌ 提交失败";
+            }
+        }
+
+        // 3. 基础监控列表管理
         async function addUrl() {
             const inp = document.getElementById('urlInp'); if(!inp.value) return;
             const cur = await (await fetch('/api/list')).json();
-            cur.push(inp.value); await fetch('/api/update_list', { method: 'POST', body: JSON.stringify(cur) });
+            cur.push(inp.value);
+            await fetch('/api/update_list', { method: 'POST', body: JSON.stringify(cur) });
             inp.value = ''; update();
         }
 
         async function delUrl(i) {
-            if(!confirm('确定移除？')) return;
+            if(!confirm('确定移除该监控？')) return;
             const cur = await (await fetch('/api/list')).json();
-            cur.splice(i, 1); await fetch('/api/update_list', { method: 'POST', body: JSON.stringify(cur) });
+            cur.splice(i, 1);
+            await fetch('/api/update_list', { method: 'POST', body: JSON.stringify(cur) });
             update();
         }
-        setInterval(update, 3000); update();
+
+        setInterval(update, 3000); 
+        update();
     </script>
 </body>
 </html>
