@@ -2,6 +2,8 @@
 
 一个完全使用AI编译，基于 `yt-dlp` 的自动化直播回放监控脚本工具，带有网页管理界面。
 
+通过确认直播结束后才开始下载直播流，从而杜绝因为网络环境卡顿而导致录制文件出现问题
+
 # 🛠️ 环境一键安装
 
 请按下 `Win + X` 打开 **终端 (PowerShell)** 或 **命令提示符 (CMD)**，依次复制并运行以下指令
@@ -41,6 +43,7 @@ git clone https://github.com/AMYdd00/yt-dlp-easyuse.git ./yt-dlp-easyuse/
 2. **一键运行**：双击项目根目录下的 **`run.bat`**。
    - 此时网页后端服务与监控逻辑将同时启动。
 3. **访问管理界面**：在浏览器打开 `http://localhost:38848`。
+4. **添加直播链接**：油管添加直播页面的链接，如“https://www.youtube.com/@necomakarin/streams” 注意最后是streams而不是直播间链接的live
 
 ## 📂 自动化规则
 - **自动分类**：下载的视频按 `Downloads/主播名/` 自动归类。
