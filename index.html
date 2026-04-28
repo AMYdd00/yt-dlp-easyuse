@@ -2,192 +2,272 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>YT-DLP 录制监控矩阵</title>
+    <title>YT-DLP 智能录播矩阵</title>
     <style>
         :root { 
-            --neon: #00f2ff; --bg: #0b0e14; --card: #161b22; 
-            --border: #30363d; --accent: #7928ca; --danger: #ff4d4d;
-            --text: #adbac7; --header: #ffffff;
+            --bg-grad-1: #0f172a; --bg-grad-2: #1e1b4b; --bg-grad-3: #0f172a;
+            --glass-bg: rgba(22, 27, 34, 0.55);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-shadow: rgba(0, 0, 0, 0.3);
+            --text-main: #f8fafc; --text-sub: #94a3b8;
+            --accent: #00f2ff; --accent-glow: rgba(0, 242, 255, 0.4);
+            --danger: #ef4444; --danger-hover: #b91c1c;
+            --log-bg: rgba(0, 0, 0, 0.5); --log-text: #4ade80;
+            --btn-bg: #3b82f6; --btn-hover: #2563eb;
         }
-        body { margin: 0; background: var(--bg); color: var(--text); font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; display: flex; height: 100vh; overflow: hidden; }
+
+        [data-theme="light"] {
+            --bg-grad-1: #e2e8f0; --bg-grad-2: #f8fafc; --bg-grad-3: #e2e8f0;
+            --glass-bg: rgba(255, 255, 255, 0.65);
+            --glass-border: rgba(0, 0, 0, 0.1);
+            --glass-shadow: rgba(0, 0, 0, 0.05);
+            --text-main: #0f172a; --text-sub: #475569;
+            --accent: #2563eb; --accent-glow: rgba(37, 99, 235, 0.3);
+            --danger: #ef4444; --danger-hover: #dc2626;
+            --log-bg: rgba(241, 245, 249, 0.8); --log-text: #059669;
+            --btn-bg: #3b82f6; --btn-hover: #2563eb;
+        }
+
+        body { 
+            margin: 0; color: var(--text-main); font-family: 'Segoe UI', system-ui, sans-serif; 
+            display: flex; height: 100vh; overflow: hidden;
+            background: linear-gradient(-45deg, var(--bg-grad-1), var(--bg-grad-2), var(--bg-grad-3));
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+            transition: all 0.5s ease;
+        }
+        @keyframes gradientBG { 0% {background-position: 0% 50%;} 50% {background-position: 100% 50%;} 100% {background-position: 0% 50%;} }
+
+        .glass { background: var(--glass-bg); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid var(--glass-border); box-shadow: 0 8px 32px var(--glass-shadow); }
+
+        .sidebar { width: 340px; padding: 25px; box-sizing: border-box; display: flex; flex-direction: column; z-index: 10; border-right: 1px solid var(--glass-border); }
+        .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+        .header-top h3 { margin: 0; font-size: 1.2rem; display: flex; align-items: center; gap: 8px; }
+        .theme-btn { background: transparent; border: 1px solid var(--glass-border); color: var(--text-main); padding: 6px 12px; border-radius: 20px; cursor: pointer; transition: 0.3s; }
+        .theme-btn:hover { background: var(--text-main); color: var(--bg-grad-1); }
+
+        .control-panel { padding: 20px; border-radius: 12px; margin-bottom: 20px; }
+        .control-panel h4 { margin: 0 0 10px 0; color: var(--text-main); font-size: 13px; text-transform: uppercase; letter-spacing: 1px; }
         
-        /* 侧边栏优化 */
-        .sidebar { width: 320px; background: #0d1117; border-right: 1px solid var(--border); padding: 25px; box-sizing: border-box; display: flex; flex-direction: column; z-index: 10; }
-        .sidebar h3 { color: var(--header); margin: 0 0 20px 0; display: flex; align-items: center; gap: 8px; font-size: 1.1rem; }
+        input { width: 100%; background: rgba(0,0,0,0.1); border: 1px solid var(--glass-border); color: var(--text-main); padding: 12px; border-radius: 8px; box-sizing: border-box; margin-bottom: 12px; outline: none; transition: 0.3s; font-size: 13px; }
+        [data-theme="light"] input { background: rgba(255,255,255,0.5); }
+        input:focus { border-color: var(--accent); box-shadow: 0 0 10px var(--accent-glow); }
+        button.primary { background: var(--btn-bg); color: #fff; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; transition: 0.3s; }
+        button.primary:hover { background: var(--btn-hover); }
+
+        .main { flex: 1; padding: 30px; overflow-y: auto; }
+        #cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 25px; }
+
+        .card { border-radius: 16px; padding: 20px; transition: all 0.3s ease; position: relative; display: flex; flex-direction: column; }
+        .card:hover { transform: translateY(-3px); box-shadow: 0 15px 35px var(--glass-shadow); border-color: var(--accent); }
         
-        /* 手动补录面板 */
-        .manual-panel { background: rgba(121, 40, 202, 0.1); border: 1px border var(--accent); border-radius: 10px; padding: 15px; margin-bottom: 25px; border: 1px solid rgba(121, 40, 202, 0.3); }
-        .manual-panel h4 { margin: 0 0 10px 0; color: #d4a5ff; font-size: 12px; text-transform: uppercase; }
+        .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+        .name { font-size: 1.15rem; font-weight: bold; color: var(--text-main); word-break: break-all; margin-right: 10px;}
+        
+        /* 移除按钮动画 */
+        .del-btn { background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.2); padding: 4px 8px; border-radius: 6px; cursor: pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); font-size: 12px; flex-shrink: 0; min-width: 60px; }
+        .del-btn:hover { background: var(--danger); color: #fff; }
 
-        /* 输入框与按钮 */
-        input { width: 100%; background: #010409; border: 1px solid var(--border); color: #fff; padding: 12px; border-radius: 6px; box-sizing: border-box; margin-bottom: 10px; outline: none; transition: all 0.2s; font-size: 13px; }
-        input:focus { border-color: var(--neon); box-shadow: 0 0 8px rgba(0, 242, 255, 0.2); }
-        .btn-main { background: var(--neon); color: #000; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; transition: opacity 0.2s; }
-        .btn-main:hover { opacity: 0.8; }
-        .btn-accent { background: var(--accent); color: #fff; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; margin-bottom: 10px; }
+        .status-txt { font-size: 13px; color: var(--accent); font-weight: 500; margin-bottom: 12px; }
+        .status-standby { color: var(--text-sub); }
 
-        /* 监控列表 */
-        .url-list-header { font-size: 11px; color: #768390; text-transform: uppercase; letter-spacing: 1px; margin: 20px 0 10px 0; }
-        .url-item { background: #21262d; padding: 10px 12px; border-radius: 6px; margin-bottom: 8px; font-size: 13px; display: flex; justify-content: space-between; align-items: center; border: 1px solid transparent; }
-        .url-item:hover { border-color: #444; }
-        .del-btn { color: #f85149; cursor: pointer; font-weight: bold; padding: 0 5px; }
+        .prog-bg { background: rgba(0,0,0,0.2); height: 6px; border-radius: 3px; overflow: hidden; margin-bottom: 15px; }
+        [data-theme="light"] .prog-bg { background: rgba(0,0,0,0.05); }
+        .prog-fill { background: var(--accent); height: 100%; width: 0%; transition: width 0.5s ease; box-shadow: 0 0 10px var(--accent-glow); }
 
-        /* 主界面网格 */
-        .main { flex: 1; padding: 30px; overflow-y: auto; background: radial-gradient(circle at 50% 0%, #1c2128 0%, #0b0e14 100%); }
-        #cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 25px; }
-
-        /* 卡片设计升级 */
-        .card { 
-            background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; 
-            transition: all 0.3s ease; position: relative; overflow: hidden;
-        }
-        .card::before { content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 2px; background: linear-gradient(90deg, transparent, var(--neon), transparent); opacity: 0; transition: 0.3s; }
-        .card:hover { border-color: #444; transform: translateY(-5px); box-shadow: 0 12px 30px rgba(0,0,0,0.6); }
-        .card:hover::before { opacity: 1; }
-
-        .name { color: var(--header); font-size: 1.1rem; font-weight: 600; margin-bottom: 8px; display: block; }
-        .status-txt { font-size: 12px; color: var(--neon); margin-bottom: 12px; font-family: monospace; }
-
-        /* 日志窗优化 */
-        .log-box { 
-            background: #000; color: #39d353; font-family: 'Consolas', monospace; 
-            font-size: 11px; padding: 12px; height: 100px; overflow-y: auto; border-radius: 6px; 
-            line-height: 1.5; border: 1px solid #222; scroll-behavior: smooth;
-        }
-
-        /* 进度条动画 */
-        .prog-bg { background: #2d333b; height: 6px; border-radius: 3px; overflow: hidden; margin: 15px 0; }
-        .prog-fill { background: linear-gradient(90deg, var(--accent), var(--neon)); height: 100%; width: 0%; transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 0 10px var(--neon); }
+        .log-box { background: var(--log-bg); color: var(--log-text); font-family: 'Consolas', monospace; font-size: 11px; padding: 12px; height: 90px; overflow-y: auto; border-radius: 8px; line-height: 1.5; border: 1px solid var(--glass-border); scroll-behavior: smooth; }
 
         ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-sub); }
     </style>
 </head>
 <body>
-    <div class="sidebar">
-        <h3><span>📡</span> 控制中心</h3>
+    <div class="sidebar glass">
+        <div class="header-top">
+            <h3>🛸 监控指挥舱</h3>
+            <button class="theme-btn" onclick="toggleTheme()" id="themeIcon">☀️ 白天</button>
+        </div>
         
-        <div class="manual-panel">
-            <h4>🚀 强制补录 (单视频)</h4>
-            <input type="text" id="manualUrl" placeholder="粘贴视频 URL..." autocomplete="off">
-            <button class="btn-main" onclick="sendManual()">开始补录</button>
-            <div id="manualMsg" style="font-size: 11px; margin-top: 8px; color: var(--neon); display: none;">任务已发送...</div>
+        <div class="control-panel glass">
+            <h4>➕ 添加自动监控</h4>
+            <input type="text" id="urlInp" placeholder="格式: https://.../streams (切勿填/live)" autocomplete="off">
+            <button class="primary" onclick="addUrl()">加入监控队列</button>
         </div>
 
-        <h4 class="url-list-header">监控频道列表</h4>
-        <input type="text" id="urlInp" placeholder="添加频道 @ID..." autocomplete="off">
-        <button class="btn-accent" onclick="addUrl()">添加监控</button>
-        
-        <div id="urlList" style="overflow-y: auto; flex: 1; margin-top: 10px;"></div>
+        <div class="control-panel glass" style="margin-top: auto;">
+            <h4>🚀 强制单次补录</h4>
+            <input type="text" id="manualUrl" placeholder="粘贴丢失录像的 URL..." autocomplete="off">
+            <button class="primary" onclick="sendManual()" style="background: var(--accent); color:#000;">执行强制下载</button>
+            <div id="manualMsg" style="font-size: 12px; margin-top: 10px; color: var(--accent); display: none;"></div>
+        </div>
     </div>
 
     <div class="main">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
-            <h2 style="margin:0; font-size: 1.6rem; color: #fff;">实时监控矩阵</h2>
-            <div id="global-status" style="font-size: 12px; background: rgba(57, 211, 83, 0.1); color: #39d353; padding: 5px 12px; border-radius: 20px; border: 1px solid #39d353;">系统运行中</div>
+        <div style="margin-bottom: 25px; display: flex; align-items: center; gap: 15px;">
+            <h2 style="margin:0; font-size: 1.8rem; color: var(--text-main);">矩阵全览</h2>
+            <span style="font-size: 12px; background: rgba(74, 222, 128, 0.15); color: #4ade80; padding: 4px 10px; border-radius: 12px; border: 1px solid #4ade80;">引擎运转中</span>
         </div>
         <div id="cards"></div>
     </div>
 
     <script>
-        // 1. 实时更新逻辑
+        function toggleTheme() {
+            const body = document.documentElement;
+            const newTheme = body.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+            body.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            document.getElementById('themeIcon').innerText = newTheme === 'light' ? '🌙 夜间' : '☀️ 白天';
+        }
+        if(localStorage.getItem('theme') === 'light') { toggleTheme(); }
+
+        // --- 防误删：二次确认核心逻辑 ---
+        let delTimers = {};
+        function safeDel(url, btnId) {
+            const btn = document.getElementById(btnId);
+            if (btn.dataset.confirm !== "true") {
+                // 第一次点击：请求确认
+                btn.dataset.confirm = "true";
+                btn.innerHTML = "⚠️ 确认删除?";
+                btn.style.background = "var(--danger)";
+                btn.style.color = "#fff";
+                // 3秒后自动复原
+                delTimers[btnId] = setTimeout(() => resetDel(btnId), 3000);
+            } else {
+                // 第二次点击：执行删除
+                clearTimeout(delTimers[btnId]);
+                executeDel(url);
+            }
+        }
+
+        function resetDel(btnId) {
+            const btn = document.getElementById(btnId);
+            if(btn && btn.dataset.confirm === "true") {
+                btn.dataset.confirm = "false";
+                btn.innerHTML = "🗑️ 移除";
+                btn.style.background = "";
+                btn.style.color = "";
+            }
+        }
+
+        async function executeDel(url) {
+            const cur = await fetch('/api/list').then(r => r.json());
+            const newList = cur.filter(u => u !== url);
+            await fetch('/api/update_list', { method: 'POST', body: JSON.stringify(newList) });
+            update();
+        }
+
         async function update() {
             try {
-                const [resS, resL] = await Promise.all([fetch('/api/status'), fetch('/api/list')]);
-                const status = await resS.json();
-                const list = await resL.json();
+                const [list, status] = await Promise.all([
+                    fetch('/api/list').then(r => r.json()),
+                    fetch('/api/status').then(r => r.json())
+                ]);
 
-                // 侧边栏列表
-                document.getElementById('urlList').innerHTML = list.map((u, i) => {
-                    let name = u.includes('@') ? u.match(/@([^/\?]+)/)?.[1] : u.split('/').filter(Boolean).pop();
-                    return `<div class="url-item">
-                        <span title="${u}">${name || '未知'}</span>
-                        <span class="del-btn" onclick="delUrl(${i})">✕</span>
-                    </div>`
-                }).join('');
+                const statusMap = {};
+                for(let s of status) {
+                    statusMap[decodeURIComponent(s.id)] = s;
+                }
 
                 const container = document.getElementById('cards');
-                const currentCardIds = status.map(s => 'card-' + btoa(encodeURIComponent(s.id)).replace(/=/g, ''));
-                
-                // 清理已停止的任务卡片
+                const currentSafeIds = list.map(u => btoa(encodeURIComponent(u)).replace(/=/g, ''));
+
                 Array.from(container.children).forEach(c => {
-                    if (!currentCardIds.includes(c.id)) c.remove();
+                    if (!currentSafeIds.includes(c.id.replace('card-', ''))) c.remove();
                 });
 
-                // 更新或创建卡片
-                for (const s of status) {
-                    const safeId = btoa(encodeURIComponent(s.id)).replace(/=/g, ''); 
-                    let card = document.getElementById(`card-${safeId}`);
+                for (let i = 0; i < list.length; i++) {
+                    let u = list[i];
+                    let safeId = currentSafeIds[i];
                     
+                    let rawName = u.includes('@') ? u.match(/@([^\/\?]+)/)?.[1] : u.split('/').filter(Boolean).pop();
+                    let name = rawName ? decodeURIComponent(rawName) : "未知频道";
+                    
+                    let activeStatus = statusMap[name]; 
+
+                    let card = document.getElementById(`card-${safeId}`);
                     if (!card) {
+                        // 绑定了全新的 safeDel 和 resetDel 函数
                         container.insertAdjacentHTML('beforeend', `
-                            <div class="card" id="card-${safeId}">
-                                <span class="name">${s.id}</span>
-                                <div class="status-txt" id="txt-${safeId}">${s.status}</div>
+                            <div class="card glass" id="card-${safeId}">
+                                <div class="card-header">
+                                    <span class="name" title="${u}">${name}</span>
+                                    <button class="del-btn" id="del-${safeId}" 
+                                        onclick="safeDel('${u}', 'del-${safeId}')" 
+                                        onmouseleave="resetDel('del-${safeId}')">🗑️ 移除</button>
+                                </div>
+                                <div class="status-txt" id="txt-${safeId}">读取中...</div>
                                 <div class="prog-bg"><div class="prog-fill" id="bar-${safeId}"></div></div>
-                                <div class="log-box" id="log-${safeId}"></div>
+                                <div class="log-box" id="log-${safeId}">正在连接终端...</div>
                             </div>`);
                         card = document.getElementById(`card-${safeId}`);
                     }
 
-                    // 进度条逻辑
-                    const pMatch = s.raw.match(/(\d+\.?\d*)%/);
-                    if (pMatch) {
-                        document.getElementById(`bar-${safeId}`).style.width = pMatch[1] + '%';
-                    }
-
-                    document.getElementById(`txt-${safeId}`).innerText = s.status;
-
-                    // 增量日志获取 (为了性能，这里依然获取最后 3000 字节)
-                    const logRes = await fetch('/api/log/' + s.id);
-                    const logTxt = await logRes.text();
+                    const txtDiv = document.getElementById(`txt-${safeId}`);
+                    const barDiv = document.getElementById(`bar-${safeId}`);
                     const logDiv = document.getElementById(`log-${safeId}`);
-                    if (logDiv.innerText !== logTxt) {
-                        logDiv.innerText = logTxt;
-                        logDiv.scrollTop = logDiv.scrollHeight;
+
+                    if (activeStatus) {
+                        txtDiv.innerText = activeStatus.status;
+                        txtDiv.className = "status-txt";
+                        
+                        const pMatch = activeStatus.raw.match(/(\d+\.?\d*)%/);
+                        barDiv.style.width = pMatch ? pMatch[1] + '%' : '100%';
+
+                        // ⚠️ 修复点：移除了 encodeURIComponent，解决双重编码导致的读取失败
+                        const logTxt = await fetch('/api/log/' + activeStatus.id).then(r => r.text());
+                        if (logDiv.innerText !== logTxt) {
+                            logDiv.innerText = logTxt;
+                            logDiv.scrollTop = logDiv.scrollHeight;
+                        }
+                    } else {
+                        txtDiv.innerText = "⏳ 待机扫描中 (暂无有效直播)";
+                        txtDiv.className = "status-txt status-standby";
+                        barDiv.style.width = '0%';
+                        logDiv.innerText = "[系统提示] 该频道当前没有产生新的流媒体切片数据。\n程序将在后台持续监听，一旦检测到直播结束将立即触发防截断录制协议...";
                     }
                 }
-            } catch (e) { console.error("Update error:", e); }
+            } catch (e) {}
         }
 
-        // 2. 手动补录逻辑
-        async function sendManual() {
-            const inp = document.getElementById('manualUrl');
-            const msg = document.getElementById('manualMsg');
-            if(!inp.value) return;
-
-            msg.style.display = 'block';
-            msg.innerText = "⏳ 补录任务已提交...";
-            
-            try {
-                await fetch('/api/manual_download', { 
-                    method: 'POST', 
-                    body: JSON.stringify({ url: inp.value.trim() }) 
-                });
-                setTimeout(() => { 
-                    msg.innerText = "✅ 提交成功，请查看 Manual 文件夹"; 
-                    inp.value = '';
-                }, 1000);
-            } catch(e) {
-                msg.innerText = "❌ 提交失败";
-            }
-        }
-
-        // 3. 基础监控列表管理
         async function addUrl() {
-            const inp = document.getElementById('urlInp'); if(!inp.value) return;
-            const cur = await (await fetch('/api/list')).json();
-            cur.push(inp.value);
-            await fetch('/api/update_list', { method: 'POST', body: JSON.stringify(cur) });
+            const inp = document.getElementById('urlInp'); 
+            const url = inp.value.trim();
+            if(!url) return;
+            if(url.endsWith('/live')) {
+                alert("⚠️ 请注意：监控列表应使用 /streams 结尾，/live 无法正确抓取 VOD 回放！");
+                return;
+            }
+
+            const cur = await fetch('/api/list').then(r => r.json());
+            if(!cur.includes(url)) {
+                cur.push(url);
+                await fetch('/api/update_list', { method: 'POST', body: JSON.stringify(cur) });
+            }
             inp.value = ''; update();
         }
 
-        async function delUrl(i) {
-            if(!confirm('确定移除该监控？')) return;
-            const cur = await (await fetch('/api/list')).json();
-            cur.splice(i, 1);
-            await fetch('/api/update_list', { method: 'POST', body: JSON.stringify(cur) });
-            update();
+        async function sendManual() {
+            const inp = document.getElementById('manualUrl');
+            const msg = document.getElementById('manualMsg');
+            if(!inp.value.trim()) return;
+
+            msg.style.display = 'block';
+            msg.innerText = "⏳ 补录指令已下发后端...";
+            
+            try {
+                await fetch('/api/manual_download', { 
+                    method: 'POST', body: JSON.stringify({ url: inp.value.trim() }) 
+                });
+                setTimeout(() => { 
+                    msg.style.color = '#4ade80';
+                    msg.innerText = "✅ 任务执行中！(请查看 Manual 文件夹)"; 
+                    inp.value = '';
+                }, 1000);
+            } catch(e) {
+                msg.style.color = 'var(--danger)';
+                msg.innerText = "❌ 提交失败，请检查 Python 服务端";
+            }
         }
 
         setInterval(update, 3000); 
