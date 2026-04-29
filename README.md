@@ -43,7 +43,8 @@ git clone https://github.com/AMYdd00/yt-dlp-easyuse.git ./yt-dlp-easyuse/
 2. **一键运行**：双击项目根目录下的 **`run.bat`**。
    - 此时网页后端服务与监控逻辑将同时启动。
 3. **访问管理界面**：在浏览器打开 `http://localhost:38848`。
-4. **添加直播链接**：油管添加直播页面的链接，如“https://www.youtube.com/@necomakarin/streams” 注意最后是streams而不是直播间链接的live
+4. **添加直播链接**：油管添加直播页面的链接，如 `https://www.youtube.com/@necomakarin/streams`  注意结尾是streams而不是直播间链接的live
+5. **补录单个录播**：点开任意要补录的视频，复制链接，如 `https://www.youtube.com/watch?v=iz6AspeszIQ`
 
 ## 📂 自动化规则
 - **自动分类**：下载的视频按 `Downloads/主播名/` 自动归类。
@@ -54,17 +55,13 @@ git clone https://github.com/AMYdd00/yt-dlp-easyuse.git ./yt-dlp-easyuse/
 ## 📝 TODO
 
 - [ ] 一键打开下载目录
-- [ ] 添加一次性下载录播选项
+- [x] 添加单次下载录播选项
 - [ ] 整合AI识别生成字幕并翻译功能
 
 
 ## ⚠️ 常见问题
 - **无法下载**：请确认 `run.bat` 中的代理端口与你的科学上网软件一致。
-- **网页打不开**：确保安装
-```shell
-pip install flask
-```
-且 38848 端口未被占用。
+- **网页打不开**：检查 `38848` 端口未被占用。
 
 ## 💖 鸣谢 (Credits / Acknowledgements)
 
