@@ -1,277 +1,233 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <title>YT-DLP 智能录播矩阵</title>
-    <style>
-        :root { 
-            --bg-grad-1: #0f172a; --bg-grad-2: #1e1b4b; --bg-grad-3: #0f172a;
-            --glass-bg: rgba(22, 27, 34, 0.55);
-            --glass-border: rgba(255, 255, 255, 0.08);
-            --glass-shadow: rgba(0, 0, 0, 0.3);
-            --text-main: #f8fafc; --text-sub: #94a3b8;
-            --accent: #00f2ff; --accent-glow: rgba(0, 242, 255, 0.4);
-            --danger: #ef4444; --danger-hover: #b91c1c;
-            --log-bg: rgba(0, 0, 0, 0.5); --log-text: #4ade80;
-            --btn-bg: #3b82f6; --btn-hover: #2563eb;
-        }
-
-        [data-theme="light"] {
-            --bg-grad-1: #e2e8f0; --bg-grad-2: #f8fafc; --bg-grad-3: #e2e8f0;
-            --glass-bg: rgba(255, 255, 255, 0.65);
-            --glass-border: rgba(0, 0, 0, 0.1);
-            --glass-shadow: rgba(0, 0, 0, 0.05);
-            --text-main: #0f172a; --text-sub: #475569;
-            --accent: #2563eb; --accent-glow: rgba(37, 99, 235, 0.3);
-            --danger: #ef4444; --danger-hover: #dc2626;
-            --log-bg: rgba(241, 245, 249, 0.8); --log-text: #059669;
-            --btn-bg: #3b82f6; --btn-hover: #2563eb;
-        }
-
-        body { 
-            margin: 0; color: var(--text-main); font-family: 'Segoe UI', system-ui, sans-serif; 
-            display: flex; height: 100vh; overflow: hidden;
-            background: linear-gradient(-45deg, var(--bg-grad-1), var(--bg-grad-2), var(--bg-grad-3));
-            background-size: 400% 400%;
-            animation: gradientBG 15s ease infinite;
-            transition: all 0.5s ease;
-        }
-        @keyframes gradientBG { 0% {background-position: 0% 50%;} 50% {background-position: 100% 50%;} 100% {background-position: 0% 50%;} }
-
-        .glass { background: var(--glass-bg); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid var(--glass-border); box-shadow: 0 8px 32px var(--glass-shadow); }
-
-        .sidebar { width: 340px; padding: 25px; box-sizing: border-box; display: flex; flex-direction: column; z-index: 10; border-right: 1px solid var(--glass-border); }
-        .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
-        .header-top h3 { margin: 0; font-size: 1.2rem; display: flex; align-items: center; gap: 8px; }
-        .theme-btn { background: transparent; border: 1px solid var(--glass-border); color: var(--text-main); padding: 6px 12px; border-radius: 20px; cursor: pointer; transition: 0.3s; }
-        .theme-btn:hover { background: var(--text-main); color: var(--bg-grad-1); }
-
-        .control-panel { padding: 20px; border-radius: 12px; margin-bottom: 20px; }
-        .control-panel h4 { margin: 0 0 10px 0; color: var(--text-main); font-size: 13px; text-transform: uppercase; letter-spacing: 1px; }
-        
-        input { width: 100%; background: rgba(0,0,0,0.1); border: 1px solid var(--glass-border); color: var(--text-main); padding: 12px; border-radius: 8px; box-sizing: border-box; margin-bottom: 12px; outline: none; transition: 0.3s; font-size: 13px; }
-        [data-theme="light"] input { background: rgba(255,255,255,0.5); }
-        input:focus { border-color: var(--accent); box-shadow: 0 0 10px var(--accent-glow); }
-        button.primary { background: var(--btn-bg); color: #fff; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; transition: 0.3s; }
-        button.primary:hover { background: var(--btn-hover); }
-
-        .main { flex: 1; padding: 30px; overflow-y: auto; }
-        #cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 25px; }
-
-        .card { border-radius: 16px; padding: 20px; transition: all 0.3s ease; position: relative; display: flex; flex-direction: column; }
-        .card:hover { transform: translateY(-3px); box-shadow: 0 15px 35px var(--glass-shadow); border-color: var(--accent); }
-        
-        .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
-        .name { font-size: 1.15rem; font-weight: bold; color: var(--text-main); word-break: break-all; margin-right: 10px;}
-        
-        /* 移除按钮动画 */
-        .del-btn { background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.2); padding: 4px 8px; border-radius: 6px; cursor: pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); font-size: 12px; flex-shrink: 0; min-width: 60px; }
-        .del-btn:hover { background: var(--danger); color: #fff; }
-
-        .status-txt { font-size: 13px; color: var(--accent); font-weight: 500; margin-bottom: 12px; }
-        .status-standby { color: var(--text-sub); }
-
-        .prog-bg { background: rgba(0,0,0,0.2); height: 6px; border-radius: 3px; overflow: hidden; margin-bottom: 15px; }
-        [data-theme="light"] .prog-bg { background: rgba(0,0,0,0.05); }
-        .prog-fill { background: var(--accent); height: 100%; width: 0%; transition: width 0.5s ease; box-shadow: 0 0 10px var(--accent-glow); }
-
-        .log-box { background: var(--log-bg); color: var(--log-text); font-family: 'Consolas', monospace; font-size: 11px; padding: 12px; height: 90px; overflow-y: auto; border-radius: 8px; line-height: 1.5; border: 1px solid var(--glass-border); scroll-behavior: smooth; }
-
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: var(--text-sub); }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>YT-DLP 录播监控</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0b1120;--surface:rgba(18,25,45,0.7);--border:rgba(56,189,248,0.1);--text:#e2e8f0;--text-dim:#64748b;--accent:#38bdf8;--green:#4ade80;--red:#f87171;--yellow:#fbbf24;--card-bg:rgba(15,23,42,0.6);--log-bg:rgba(0,0,0,0.4);--log-text:#4ade80;--radius:12px}
+[data-theme="light"]{--bg:#f1f5f9;--surface:rgba(255,255,255,0.8);--border:rgba(0,0,0,0.08);--text:#0f172a;--text-dim:#64748b;--accent:#2563eb;--green:#059669;--red:#dc2626;--yellow:#d97706;--card-bg:rgba(255,255,255,0.7);--log-bg:rgba(226,232,240,0.8);--log-text:#059669}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;min-height:100vh;display:flex;transition:background .3s}
+.sidebar{width:320px;flex-shrink:0;padding:24px;border-right:1px solid var(--border);display:flex;flex-direction:column;gap:16px;height:100vh;position:sticky;top:0}
+.sidebar-header{display:flex;align-items:center;justify-content:space-between;padding-bottom:16px;border-bottom:1px solid var(--border)}
+.sidebar-header h1{font-size:18px;font-weight:700;background:linear-gradient(135deg,var(--accent),#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.theme-btn{background:var(--surface);border:1px solid var(--border);color:var(--text);padding:6px 14px;border-radius:20px;cursor:pointer;font-size:13px;transition:.2s}
+.theme-btn:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+.section-title{font-size:12px;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+.card{background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius);padding:16px;backdrop-filter:blur(12px)}
+.card input{width:100%;background:rgba(0,0,0,0.2);border:1px solid var(--border);color:var(--text);padding:10px 12px;border-radius:8px;outline:none;font-size:13px;transition:.2s;margin-bottom:10px}
+[data-theme="light"] .card input{background:rgba(0,0,0,0.03)}
+.card input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(56,189,248,0.15)}
+.card input::placeholder{color:var(--text-dim)}
+.btn{width:100%;padding:10px;border:none;border-radius:8px;font-weight:600;font-size:13px;cursor:pointer;transition:.2s}
+.btn-primary{background:var(--accent);color:#fff}.btn-primary:hover{opacity:.85}.btn-primary:disabled{opacity:.4;cursor:not-allowed}
+.btn-accent{background:var(--green);color:#0b1120}.btn-accent:hover{opacity:.85}
+.manual-msg{font-size:12px;margin-top:10px;color:var(--accent);display:none}
+.main{flex:1;padding:32px;overflow-y:auto}
+.main-header{display:flex;align-items:center;gap:16px;margin-bottom:28px;flex-wrap:wrap}
+.main-header h2{font-size:22px;font-weight:700}
+.badge{font-size:12px;padding:4px 12px;border-radius:20px;font-weight:500}
+.badge-ok{background:rgba(74,222,128,.1);color:var(--green);border:1px solid var(--green)}
+.badge-warn{background:rgba(251,191,36,.1);color:var(--yellow);border:1px solid var(--yellow)}
+.badge-err{background:rgba(248,113,113,.1);color:var(--red);border:1px solid var(--red)}
+.badge-count{background:var(--surface);color:var(--text-dim);border:1px solid var(--border)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:20px}
+.channel-card{background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius);padding:20px;transition:.3s}
+.channel-card:hover{border-color:var(--accent);box-shadow:0 4px 24px rgba(0,0,0,.2)}
+.card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px}
+.channel-name{font-size:15px;font-weight:600;word-break:break-all;flex:1;margin-right:10px}
+.del-btn{background:rgba(248,113,113,.08);color:var(--red);border:1px solid rgba(248,113,113,.15);padding:4px 10px;border-radius:6px;cursor:pointer;font-size:12px;transition:.2s;flex-shrink:0}
+.del-btn:hover{background:var(--red);color:#fff}.del-btn.confirming{background:var(--red);color:#fff}
+.status{font-size:13px;margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.status-dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.status-dot.green{background:var(--green);box-shadow:0 0 8px rgba(74,222,128,.4)}
+.status-dot.yellow{background:var(--yellow);box-shadow:0 0 8px rgba(251,191,36,.4)}
+.status-dot.gray{background:var(--text-dim)}
+.progress{height:4px;background:rgba(0,0,0,.15);border-radius:2px;overflow:hidden;margin-bottom:12px}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),#a78bfa);border-radius:2px;transition:width .5s ease;width:0%}
+.log-box{background:var(--log-bg);color:var(--log-text);font-family:Consolas,monospace;font-size:11px;padding:12px;height:80px;overflow-y:auto;border-radius:8px;line-height:1.6;border:1px solid var(--border);white-space:pre-wrap;word-break:break-all}
+.toast-container{position:fixed;top:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:8px}
+.toast{padding:12px 20px;border-radius:8px;color:#fff;font-size:13px;backdrop-filter:blur(8px);max-width:360px;animation:slideIn .3s ease}
+.toast-info{background:rgba(56,189,248,.85)}
+.toast-success{background:rgba(74,222,128,.85);color:#0b1120}
+.toast-warn{background:rgba(251,191,36,.85);color:#0b1120}
+.toast-error{background:rgba(248,113,113,.85)}
+@keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-thumb{background:var(--border);border-radius:10px}
+</style>
 </head>
 <body>
-    <div class="sidebar glass">
-        <div class="header-top">
-            <h3>🛸 监控指挥舱</h3>
-            <button class="theme-btn" onclick="toggleTheme()" id="themeIcon">☀️ 白天</button>
-        </div>
-        
-        <div class="control-panel glass">
-            <h4>➕ 添加自动监控</h4>
-            <input type="text" id="urlInp" placeholder="格式: https://.../streams (切勿填/live)" autocomplete="off">
-            <button class="primary" onclick="addUrl()">加入监控队列</button>
-        </div>
+<div class="toast-container" id="toastContainer"></div>
+<div class="sidebar">
+<div class="sidebar-header"><h1>YT-DLP 监控</h1><button class="theme-btn" onclick="toggleTheme()" id="themeIcon">☀️ 日间</button></div>
+<div><div class="section-title">添加频道</div><div class="card"><input type="text" id="urlInp" placeholder="频道 /streams 链接" autocomplete="off"><button class="btn btn-primary" id="addBtn" onclick="addUrl()">添加到监控</button></div></div>
+<div style="flex:1"></div>
+<div><div class="section-title">手动下载</div><div class="card"><input type="text" id="manualUrl" placeholder="单个视频链接" autocomplete="off"><button class="btn btn-accent" id="manualBtn" onclick="sendManual()">开始下载</button><div class="manual-msg" id="manualMsg"></div></div></div>
+</div>
+<div class="main">
+<div class="main-header"><h2>频道列表</h2><span class="badge badge-ok" id="engineBadge">运行正常</span><span class="badge badge-count" id="countBadge"></span></div>
+<div class="grid" id="cards"><div id="loading-placeholder" style="grid-column:1/-1;text-align:center;padding:60px 0;color:var(--text-dim)"><div style="font-size:32px;margin-bottom:12px">📡</div><div>正在连接服务端...</div></div></div>
+</div>
+<script>
+// ===== 工具函数 =====
+function esc(s){var d=document.createElement("div");d.textContent=s;return d.innerHTML}
+function safeId(s){return btoa(encodeURIComponent(s)).replace(/=/g,"")}
+function nameFromUrl(url){var m=url.match(/@([^\/?]+)/);if(m)try{return decodeURIComponent(m[1])}catch(e){}try{return decodeURIComponent(url.split("/").filter(Boolean).pop()||"?")}catch(e){}return"?"}
+function toast(msg,type,dur){type=type||"info";dur=dur||4000;var c=document.getElementById("toastContainer");var el=document.createElement("div");el.className="toast toast-"+type;el.textContent=msg;c.appendChild(el);setTimeout(function(){el.style.animation="slideIn .3s ease reverse forwards";setTimeout(function(){el.remove()},300)},dur)}
+function toggleTheme(){var r=document.documentElement;var t=r.getAttribute("data-theme")==="light"?"dark":"light";r.setAttribute("data-theme",t);localStorage.setItem("theme",t);document.getElementById("themeIcon").textContent=t==="light"?"🌙 夜间":"☀️ 日间"}
+if(localStorage.getItem("theme")==="light"){toggleTheme()}
 
-        <div class="control-panel glass" style="margin-top: auto;">
-            <h4>🚀 强制单次补录</h4>
-            <input type="text" id="manualUrl" placeholder="粘贴丢失录像的 URL..." autocomplete="off">
-            <button class="primary" onclick="sendManual()" style="background: var(--accent); color:#000;">执行强制下载</button>
-            <div id="manualMsg" style="font-size: 12px; margin-top: 10px; color: var(--accent); display: none;"></div>
-        </div>
-    </div>
+// ===== 事件委托：删除按钮 =====
+var delTimers={};
+document.getElementById("cards").addEventListener("click",function(e){
+  var btn=e.target.closest(".del-btn");
+  if(!btn)return;
+  var url=btn.getAttribute("data-url");
+  var id=btn.id;
+  if(btn.classList.contains("confirming")){
+    clearTimeout(delTimers[id]);
+    executeDel(url);
+    return;
+  }
+  btn.classList.add("confirming");
+  btn.textContent="确认移除?";
+  delTimers[id]=setTimeout(function(){
+    btn.classList.remove("confirming");
+    btn.textContent="移除";
+  },3000);
+});
+document.getElementById("cards").addEventListener("mouseleave",function(){
+  // 鼠标离开卡片区域时复原所有确认状态
+  var btns=document.querySelectorAll(".del-btn.confirming");
+  for(var i=0;i<btns.length;i++){
+    clearTimeout(delTimers[btns[i].id]);
+    btns[i].classList.remove("confirming");
+    btns[i].textContent="移除";
+  }
+});
 
-    <div class="main">
-        <div style="margin-bottom: 25px; display: flex; align-items: center; gap: 15px;">
-            <h2 style="margin:0; font-size: 1.8rem; color: var(--text-main);">矩阵全览</h2>
-            <span style="font-size: 12px; background: rgba(74, 222, 128, 0.15); color: #4ade80; padding: 4px 10px; border-radius: 12px; border: 1px solid #4ade80;">引擎运转中</span>
-        </div>
-        <div id="cards"></div>
-    </div>
+async function executeDel(url){
+  try{
+    var cur=await fetch("/api/list").then(function(r){return r.json()});
+    var next=cur.filter(function(u){return u!==url});
+    await fetch("/api/update_list",{method:"POST",body:JSON.stringify(next)});
+    toast("已移除","success");
+    update();
+  }catch(e){toast("删除失败","error")}
+}
 
-    <script>
-        function toggleTheme() {
-            const body = document.documentElement;
-            const newTheme = body.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
-            body.setAttribute('data-theme', newTheme);
-            localStorage.setItem('theme', newTheme);
-            document.getElementById('themeIcon').innerText = newTheme === 'light' ? '🌙 夜间' : '☀️ 白天';
-        }
-        if(localStorage.getItem('theme') === 'light') { toggleTheme(); }
+// ===== 核心更新 =====
+var failCount=0;
+async function update(){
+  try{
+    var resp=await Promise.all([
+      fetch("/api/list").then(function(r){return r.json()}),
+      fetch("/api/status").then(function(r){return r.json()})
+    ]);
+    var list=resp[0];
+    var status=resp[1];
+    failCount=0;
+    document.getElementById("engineBadge").className="badge badge-ok";
+    document.getElementById("engineBadge").textContent="运行正常";
 
-        // --- 防误删：二次确认核心逻辑 ---
-        let delTimers = {};
-        function safeDel(url, btnId) {
-            const btn = document.getElementById(btnId);
-            if (btn.dataset.confirm !== "true") {
-                // 第一次点击：请求确认
-                btn.dataset.confirm = "true";
-                btn.innerHTML = "⚠️ 确认删除?";
-                btn.style.background = "var(--danger)";
-                btn.style.color = "#fff";
-                // 3秒后自动复原
-                delTimers[btnId] = setTimeout(() => resetDel(btnId), 3000);
-            } else {
-                // 第二次点击：执行删除
-                clearTimeout(delTimers[btnId]);
-                executeDel(url);
-            }
-        }
+    var smap={};
+    for(var i=0;i<status.length;i++){smap[decodeURIComponent(status[i].id)]=status[i]}
 
-        function resetDel(btnId) {
-            const btn = document.getElementById(btnId);
-            if(btn && btn.dataset.confirm === "true") {
-                btn.dataset.confirm = "false";
-                btn.innerHTML = "🗑️ 移除";
-                btn.style.background = "";
-                btn.style.color = "";
-            }
-        }
+    var container=document.getElementById("cards");
+    var ids=list.map(function(u){return safeId(u)});
+    // 清理
+    for(var i=container.children.length-1;i>=0;i--){
+      var c=container.children[i];
+      if(c.id==="loading-placeholder"){c.remove();continue}
+      if(c.id.startsWith("card-")&&ids.indexOf(c.id.replace("card-",""))===-1){c.remove()}
+    }
+    // 频道计数
+    var ce=document.getElementById("countBadge");
+    if(list.length>0){ce.style.display="inline-block";ce.textContent=list.length+" 个频道"}
+    else{ce.style.display="none"}
 
-        async function executeDel(url) {
-            const cur = await fetch('/api/list').then(r => r.json());
-            const newList = cur.filter(u => u !== url);
-            await fetch('/api/update_list', { method: 'POST', body: JSON.stringify(newList) });
-            update();
-        }
+    // 渲染卡片
+    for(var i=0;i<list.length;i++){
+      var u=list[i];
+      var sid=ids[i];
+      var name=nameFromUrl(u);
+      var as=smap[name];
+      if(document.getElementById("card-"+sid)){updateCard(sid,as);continue}
+      // 新建卡片
+      var div=document.createElement("div");
+      div.className="channel-card";
+      div.id="card-"+sid;
+      div.innerHTML='<div class="card-top"><span class="channel-name" title="'+esc(u)+'">'+esc(name)+'</span><button class="del-btn" id="del-'+sid+'" data-url="'+esc(u)+'">移除</button></div><div class="status" id="st-'+sid+'"><span class="status-dot gray"></span> 等待中</div><div class="progress"><div class="progress-fill" id="bar-'+sid+'"></div></div><div class="log-box" id="log-'+sid+'">正在加载...</div>';
+      container.appendChild(div);
+      updateCard(sid,as);
+    }
+  }catch(e){
+    failCount++;
+    var badge=document.getElementById("engineBadge");
+    if(failCount>=3){badge.className="badge badge-warn";badge.textContent="连接异常 ("+failCount+"次)"}
+    if(failCount>=6){badge.className="badge badge-err";badge.textContent="无法连接";toast("服务端连接失败","error",8000)}
+  }
+}
 
-        async function update() {
-            try {
-                const [list, status] = await Promise.all([
-                    fetch('/api/list').then(r => r.json()),
-                    fetch('/api/status').then(r => r.json())
-                ]);
+function updateCard(sid,as){
+  var st=document.getElementById("st-"+sid);
+  var bar=document.getElementById("bar-"+sid);
+  var log=document.getElementById("log-"+sid);
+  if(as){
+    if(as.status.indexOf("\u274c")!==-1){st.innerHTML='<span class="status-dot" style="background:var(--red);box-shadow:0 0 8px rgba(248,113,113,.4)"></span> '+esc(as.status)}
+    else if(as.status.indexOf("\u4e0b\u8f7d")!==-1){st.innerHTML='<span class="status-dot green"></span> '+esc(as.status)}
+    else{st.innerHTML='<span class="status-dot yellow"></span> '+esc(as.status)}
+    var pm=as.raw.match(/(\d+\.?\d*)%/);
+    bar.style.width=pm?pm[1]+"%":"100%";
+    fetch("/api/log/"+as.id).then(function(r){return r.text()}).then(function(t){if(log.textContent!==t){log.textContent=t;log.scrollTop=log.scrollHeight}}).catch(function(){});
+  }else{
+    st.innerHTML='<span class="status-dot gray"></span> 等待中';
+    bar.style.width="0%";
+    log.textContent="暂无直播录像";
+  }
+}
 
-                const statusMap = {};
-                for(let s of status) {
-                    statusMap[decodeURIComponent(s.id)] = s;
-                }
+// ===== 操作 =====
+async function addUrl(){
+  var inp=document.getElementById("urlInp");
+  var btn=document.getElementById("addBtn");
+  var url=inp.value.trim();
+  if(!url)return;
+  if(url.endsWith("/live")){toast("请使用 /streams 链接","warn");return}
+  btn.disabled=true;btn.textContent="添加中...";
+  try{
+    var cur=await fetch("/api/list").then(function(r){return r.json()});
+    if(cur.indexOf(url)===-1){cur.push(url);await fetch("/api/update_list",{method:"POST",body:JSON.stringify(cur)});toast("已添加","success")}
+    else{toast("已在列表中","warn")}
+    inp.value="";update();
+  }catch(e){toast("添加失败","error")}
+  finally{btn.disabled=false;btn.textContent="添加到监控"}
+}
 
-                const container = document.getElementById('cards');
-                const currentSafeIds = list.map(u => btoa(encodeURIComponent(u)).replace(/=/g, ''));
+async function sendManual(){
+  var inp=document.getElementById("manualUrl");
+  var btn=document.getElementById("manualBtn");
+  var msg=document.getElementById("manualMsg");
+  var url=inp.value.trim();
+  if(!url)return;
+  btn.disabled=true;msg.style.display="block";msg.textContent="正在提交...";msg.style.color="var(--accent)";
+  try{
+    var r=await fetch("/api/manual_download",{method:"POST",body:JSON.stringify({url:url})});
+    var d=await r.json();
+    if(d.error){msg.textContent="失败";msg.style.color="var(--red)";toast("下载失败","error")}
+    else{msg.textContent="已开始下载";msg.style.color="var(--green)";toast("已启动","success");inp.value=""}
+  }catch(e){msg.textContent="提交失败";msg.style.color="var(--red)";toast("提交失败","error")}
+  finally{btn.disabled=false}
+}
 
-                Array.from(container.children).forEach(c => {
-                    if (!currentSafeIds.includes(c.id.replace('card-', ''))) c.remove();
-                });
+// ===== 键盘快捷键 =====
+document.getElementById("urlInp").addEventListener("keydown",function(e){if(e.key==="Enter"){addUrl()}})
+document.getElementById("manualUrl").addEventListener("keydown",function(e){if(e.key==="Enter"){sendManual()}})
 
-                for (let i = 0; i < list.length; i++) {
-                    let u = list[i];
-                    let safeId = currentSafeIds[i];
-                    
-                    let rawName = u.includes('@') ? u.match(/@([^\/\?]+)/)?.[1] : u.split('/').filter(Boolean).pop();
-                    let name = rawName ? decodeURIComponent(rawName) : "未知频道";
-                    
-                    let activeStatus = statusMap[name]; 
-
-                    let card = document.getElementById(`card-${safeId}`);
-                    if (!card) {
-                        // 绑定了全新的 safeDel 和 resetDel 函数
-                        container.insertAdjacentHTML('beforeend', `
-                            <div class="card glass" id="card-${safeId}">
-                                <div class="card-header">
-                                    <span class="name" title="${u}">${name}</span>
-                                    <button class="del-btn" id="del-${safeId}" 
-                                        onclick="safeDel('${u}', 'del-${safeId}')" 
-                                        onmouseleave="resetDel('del-${safeId}')">🗑️ 移除</button>
-                                </div>
-                                <div class="status-txt" id="txt-${safeId}">读取中...</div>
-                                <div class="prog-bg"><div class="prog-fill" id="bar-${safeId}"></div></div>
-                                <div class="log-box" id="log-${safeId}">正在连接终端...</div>
-                            </div>`);
-                        card = document.getElementById(`card-${safeId}`);
-                    }
-
-                    const txtDiv = document.getElementById(`txt-${safeId}`);
-                    const barDiv = document.getElementById(`bar-${safeId}`);
-                    const logDiv = document.getElementById(`log-${safeId}`);
-
-                    if (activeStatus) {
-                        txtDiv.innerText = activeStatus.status;
-                        txtDiv.className = "status-txt";
-                        
-                        const pMatch = activeStatus.raw.match(/(\d+\.?\d*)%/);
-                        barDiv.style.width = pMatch ? pMatch[1] + '%' : '100%';
-
-                        // ⚠️ 修复点：移除了 encodeURIComponent，解决双重编码导致的读取失败
-                        const logTxt = await fetch('/api/log/' + activeStatus.id).then(r => r.text());
-                        if (logDiv.innerText !== logTxt) {
-                            logDiv.innerText = logTxt;
-                            logDiv.scrollTop = logDiv.scrollHeight;
-                        }
-                    } else {
-                        txtDiv.innerText = "⏳ 待机扫描中 (暂无有效直播)";
-                        txtDiv.className = "status-txt status-standby";
-                        barDiv.style.width = '0%';
-                        logDiv.innerText = "[系统提示] 该频道当前没有产生新的流媒体切片数据。\n程序将在后台持续监听，一旦检测到直播结束将立即触发防截断录制协议...";
-                    }
-                }
-            } catch (e) {}
-        }
-
-        async function addUrl() {
-            const inp = document.getElementById('urlInp'); 
-            const url = inp.value.trim();
-            if(!url) return;
-            if(url.endsWith('/live')) {
-                alert("⚠️ 请注意：监控列表应使用 /streams 结尾，/live 无法正确抓取 VOD 回放！");
-                return;
-            }
-
-            const cur = await fetch('/api/list').then(r => r.json());
-            if(!cur.includes(url)) {
-                cur.push(url);
-                await fetch('/api/update_list', { method: 'POST', body: JSON.stringify(cur) });
-            }
-            inp.value = ''; update();
-        }
-
-        async function sendManual() {
-            const inp = document.getElementById('manualUrl');
-            const msg = document.getElementById('manualMsg');
-            if(!inp.value.trim()) return;
-
-            msg.style.display = 'block';
-            msg.innerText = "⏳ 补录指令已下发后端...";
-            
-            try {
-                await fetch('/api/manual_download', { 
-                    method: 'POST', body: JSON.stringify({ url: inp.value.trim() }) 
-                });
-                setTimeout(() => { 
-                    msg.style.color = '#4ade80';
-                    msg.innerText = "✅ 任务执行中！(请查看 Manual 文件夹)"; 
-                    inp.value = '';
-                }, 1000);
-            } catch(e) {
-                msg.style.color = 'var(--danger)';
-                msg.innerText = "❌ 提交失败，请检查 Python 服务端";
-            }
-        }
-
-        setInterval(update, 3000); 
-        update();
-    </script>
+// ===== 启动 =====
+update();
+setInterval(update,5000);
+</script>
 </body>
 </html>

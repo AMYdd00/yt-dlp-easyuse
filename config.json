@@ -1,0 +1,32 @@
+{
+    "server": {
+        "host": "0.0.0.0",
+        "port": 38848
+    },
+    "yt_dlp": {
+        "proxy": "http://127.0.0.1:7890",
+        "retries": "infinite",
+        "fragment_retries": "infinite",
+        "retry_sleep": 10,
+        "extractor_retries": 10,
+        "concurrent_fragments": 4,
+        "max_height": 1080,
+        "format": "bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
+        "merge_format": "mp4",
+        "playlist_items": "1-5",
+        "match_filter": "live_status = was_live"
+    },
+    "paths": {
+        "downloads": "Downloads",
+        "manual_downloads": "Downloads/Manual",
+        "logs": "logs",
+        "archive": "archive.txt",
+        "list_file": "list.txt"
+    },
+    "polling": {
+        "interval_seconds": 300,
+        "max_log_size_bytes": 5242880,
+        "status_refresh_ms": 5000,
+        "log_refresh_ms": 3000
+    }
+}
