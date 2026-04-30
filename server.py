@@ -79,7 +79,21 @@ def rotate_log(log_path):
         except OSError:
             pass
 
-def get_last_download_time(channel_name):    download_dir = os.path.join(BASE_DIR, "Downloads", channel_name)    if not os.path.exists(download_dir):        return None    latest_time = None    for item in os.listdir(download_dir):        if item.endswith(".mp4"):            fpath = os.path.join(download_dir, item)            mtime = os.path.getmtime(fpath)            if latest_time is None or mtime > latest_time:                latest_time = mtime    if latest_time:        return datetime.fromtimestamp(latest_time).strftime("%Y-%m-%d %H:%M")    return None
+def get_last_download_time(channel_name):
+    download_dir = os.path.join(BASE_DIR, "Downloads", channel_name)
+    if not os.path.exists(download_dir):
+        return None
+    latest_time = None
+    for item in os.listdir(download_dir):
+        if item.endswith(".mp4"):
+            fpath = os.path.join(download_dir, item)
+            mtime = os.path.getmtime(fpath)
+            if latest_time is None or mtime > latest_time:
+                latest_time = mtime
+    if latest_time:
+        return datetime.fromtimestamp(latest_time).strftime("%Y-%m-%d %H:%M")
+    return None
+
 
 def translate_status(line):
     if "ERROR" in line:
