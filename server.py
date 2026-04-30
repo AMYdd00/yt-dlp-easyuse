@@ -94,7 +94,6 @@ def get_last_download_time(channel_name):
         return datetime.fromtimestamp(latest_time).strftime("%Y-%m-%d %H:%M")
     return None
 
-
 def translate_status(line):
     if "ERROR" in line:
         return "\u274c \u4e0b\u8f7d\u51fa\u9519\uff0c\u6b63\u5728\u91cd\u8bd5"
@@ -177,6 +176,15 @@ def get_log_files():
 class MonitorHandler(SimpleHTTPRequestHandler):
     def log_message(self, format, *args):
         pass
+
+    # ── OPTIONS (CORS 预检) ──
+    def do_OPTIONS(self):
+        self.send_response(200)
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+        self.send_header('Access-Control-Max-Age', '86400')
+        self.end_headers()
 
     # ── POST ──
     def do_POST(self):
@@ -285,11 +293,13 @@ class MonitorHandler(SimpleHTTPRequestHandler):
                 lines = [l.strip() for l in raw.splitlines() if l.strip()]
                 last = lines[-1] if lines else ""
                 cname = f_name.replace('.log', '')
+                last_time = get_last_download_time(cname)
                 results.append({
                     "id": cname,
                     "status": translate_status(last),
                     "raw": last,
-                    "running": cname in running_names
+                    "running": cname in running_names,
+                    "last_download": last_time or ""
                 })
             except Exception:
                 continue
@@ -323,11 +333,19 @@ class MonitorHandler(SimpleHTTPRequestHandler):
         })
 
     def _get_log(self):
+        """获取日志内容（含路径穿越防护）"""
         raw_name = self.path.split('/')[-1]
         decoded_name = unquote(raw_name)
         path_raw = os.path.join(LOG_DIR, f"{raw_name}.log")
         path_decoded = os.path.join(LOG_DIR, f"{decoded_name}.log")
         log_path = path_raw if os.path.exists(path_raw) else path_decoded
+
+        # 路径穿越防护：确保解析后的路径仍在 LOG_DIR 下
+        real_log_dir = os.path.realpath(LOG_DIR)
+        real_log_path = os.path.realpath(log_path)
+        if not real_log_path.startswith(real_log_dir + os.sep):
+            self.wfile.write("[安全警告] 禁止访问的路径".encode('utf-8'))
+            return
 
         self.send_response(200)
         self.send_header('Content-Type', 'text/plain; charset=utf-8')

@@ -77,7 +77,7 @@ function safeId(s){return btoa(encodeURIComponent(s)).replace(/=/g,"")}
 function nameFromUrl(url){var m=url.match(/@([^\/?]+)/);if(m)try{return decodeURIComponent(m[1])}catch(e){}try{return decodeURIComponent(url.split("/").filter(Boolean).pop()||"?")}catch(e){}return"?"}
 function toast(msg,type,dur){type=type||"info";dur=dur||4000;var c=document.getElementById("toastContainer");var el=document.createElement("div");el.className="toast toast-"+type;el.textContent=msg;c.appendChild(el);setTimeout(function(){el.style.animation="slideIn .3s ease reverse forwards";setTimeout(function(){el.remove()},300)},dur)}
 function toggleTheme(){var r=document.documentElement;var t=r.getAttribute("data-theme")==="light"?"dark":"light";r.setAttribute("data-theme",t);localStorage.setItem("theme",t);document.getElementById("themeIcon").textContent=t==="light"?"🌙 夜间":"☀️ 日间"}
-if(localStorage.getItem("theme")==="light"){toggleTheme()}
+if(localStorage.getItem("theme")==="light"){document.documentElement.setAttribute("data-theme","light");document.getElementById("themeIcon").textContent="🌙 夜间"}
 
 // ===== 事件委托：删除按钮 =====
 var delTimers={};
@@ -182,7 +182,7 @@ function updateCard(sid,as){
     else{st.innerHTML='<span class="status-dot yellow"></span> '+esc(as.status)}
     var pm=as.raw.match(/(\d+\.?\d*)%/);
     bar.style.width=pm?pm[1]+"%":"100%";
-    if(lt){lt.textContent=as.last_download?"?? "+as.last_download:""}
+    if(lt){lt.textContent=as.last_download?"\u6700\u540e\u4e0b\u8f7d: "+as.last_download:""}
     fetch("/api/log/"+as.id).then(function(r){return r.text()}).then(function(t){if(log.textContent!==t){log.textContent=t;log.scrollTop=log.scrollHeight}}).catch(function(){});
   }else{
     st.innerHTML='<span class="status-dot gray"></span> 等待中';

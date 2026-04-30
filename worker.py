@@ -1,4 +1,4 @@
-import os, json, subprocess, time, signal, sys, re, threading
+import os, json, subprocess, time, signal, sys, re, threading, urllib.parse
 from datetime import datetime
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -143,6 +143,15 @@ def start_download(name, url):
 
     threading.Thread(target=cleanup, daemon=True).start()
     return proc
+
+def write_own_pid():
+    """将自己的PID写入文件，供 run.bat 管理"""
+    try:
+        pid_file_path = os.path.join(BASE_DIR, '.worker_pid')
+        with open(pid_file_path, 'w') as f:
+            f.write(str(os.getpid()))
+    except Exception:
+        pass
 
 def main():
     print("=" * 40)
