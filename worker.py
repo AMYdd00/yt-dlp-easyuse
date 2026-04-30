@@ -177,6 +177,7 @@ def main():
         time.sleep(POLL_SECONDS)
 
 if __name__ == "__main__":
+    write_own_pid()
     try:
         main()
     except KeyboardInterrupt:
