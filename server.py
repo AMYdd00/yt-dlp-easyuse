@@ -221,7 +221,6 @@ class MonitorHandler(SimpleHTTPRequestHandler):
             log_file = os.path.join(LOG_DIR, name + ".log")
             with open(log_file, "w", encoding="utf-8") as lf:
                 proc = subprocess.Popen(cmd, stdout=lf, stderr=subprocess.STDOUT, shell=False)
-            name = f"manual_{int(time.time())}"
             with registry_lock:
                 process_registry[name] = {
                     "process": proc, "url": url,
