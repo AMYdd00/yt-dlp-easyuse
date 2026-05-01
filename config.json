@@ -25,8 +25,6 @@
     },
     "polling": {
         "interval_seconds": 300,
-        "max_log_size_bytes": 5242880,
-        "status_refresh_ms": 5000,
-        "log_refresh_ms": 3000
+        "max_log_size_bytes": 5242880
     }
 }

@@ -3,9 +3,14 @@ setlocal enabledelayedexpansion
 cd /d "%~dp0"
 title YT-DLP 监控系统
 
-taskkill /f /im yt-dlp.exe >nul 2>nul
-for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":38848 "') do (
-    taskkill /f /pid %%p >nul 2>nul
+:: 清理残留
+if exist .server_pid (
+    set /p old_pid=<.server_pid
+    taskkill /f /pid !old_pid! >nul 2>nul
+)
+if exist .worker_pid (
+    set /p old_pid=<.worker_pid
+    taskkill /f /pid !old_pid! >nul 2>nul
 )
 if exist .stop_signal del .stop_signal
 
@@ -21,8 +26,8 @@ timeout /t 2 >nul
 echo ================================
 echo   YT-DLP 监控系统
 echo   地址: http://localhost:38848
-echo   (注意: 直接关窗口后台仍在运行)
 echo   关闭请用 stop.bat
+echo   本窗口可随时关闭，后台继续运行
 echo ================================
 
 :loop
@@ -34,9 +39,14 @@ timeout /t 3 >nul
 goto loop
 
 :cleanup
-taskkill /f /im yt-dlp.exe >nul 2>nul
-for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":38848 "') do (
-    taskkill /f /pid %%p >nul 2>nul
+if exist .server_pid (
+    set /p pid=<.server_pid
+    taskkill /f /pid !pid! >nul 2>nul
 )
+if exist .worker_pid (
+    set /p pid=<.worker_pid
+    taskkill /f /pid !pid! >nul 2>nul
+)
+taskkill /f /im yt-dlp.exe >nul 2>nul
 echo [INFO] 已停止
 exit

@@ -80,16 +80,29 @@ def rotate_log(log_path):
             pass
 
 def get_last_download_time(channel_name):
-    download_dir = os.path.join(BASE_DIR, "Downloads", channel_name)
-    if not os.path.exists(download_dir):
-        return None
+    """获取频道最近一次下载时间，支持 URL 编码/解码、多种视频格式"""
+    decoded = unquote(channel_name)
+    candidates = [decoded]
+    if decoded != channel_name:
+        candidates.append(channel_name)
     latest_time = None
-    for item in os.listdir(download_dir):
-        if item.endswith(".mp4"):
-            fpath = os.path.join(download_dir, item)
-            mtime = os.path.getmtime(fpath)
-            if latest_time is None or mtime > latest_time:
-                latest_time = mtime
+    video_exts = (".mp4", ".mkv", ".webm", ".mov", ".avi", ".flv")
+    for cname in candidates:
+        download_dir = os.path.join(BASE_DIR, "Downloads", cname)
+        if not os.path.exists(download_dir):
+            continue
+        try:
+            for item in os.listdir(download_dir):
+                if item.lower().endswith(video_exts):
+                    fpath = os.path.join(download_dir, item)
+                    try:
+                        mtime = os.path.getmtime(fpath)
+                        if latest_time is None or mtime > latest_time:
+                            latest_time = mtime
+                    except OSError:
+                        continue
+        except OSError:
+            continue
     if latest_time:
         return datetime.fromtimestamp(latest_time).strftime("%Y-%m-%d %H:%M")
     return None
@@ -200,6 +213,7 @@ class MonitorHandler(SimpleHTTPRequestHandler):
             '/api/manual_download': self._manual_download,
             '/api/update_list': self._update_list,
             '/api/kill': self._kill_process,
+            '/api/clear_manual': self._clear_manual,
         }
         handler = handlers.get(self.path)
         if handler:
@@ -260,6 +274,36 @@ class MonitorHandler(SimpleHTTPRequestHandler):
                 process_registry.pop(name, None)
                 self._send_json({"status": "ok", "message": "Already stopped"})
 
+    def _try_clean_log(self, name):
+        """删除指定任务的日志文件"""
+        log_file = os.path.join(LOG_DIR, f"{name}.log")
+        pid_file = os.path.join(LOG_DIR, f"{name}.pid")
+        for fp in (log_file, pid_file):
+            try:
+                if os.path.exists(fp):
+                    os.remove(fp)
+            except OSError:
+                pass
+
+    def _clear_manual(self, data):
+        """先杀进程，再删日志"""
+        name = data.get('name', '')
+        if not name:
+            self._send_json({"error": "Name required"}, 400)
+            return
+        with registry_lock:
+            info = process_registry.pop(name, None)
+            if info:
+                proc = info["process"]
+                if proc.poll() is None:
+                    proc.terminate()
+                    try:
+                        proc.wait(timeout=10)
+                    except subprocess.TimeoutExpired:
+                        proc.kill()
+        self._try_clean_log(name)
+        self._send_json({"status": "ok"})
+
     # ── GET ──
     def do_GET(self):
         try:
@@ -296,12 +340,19 @@ class MonitorHandler(SimpleHTTPRequestHandler):
                 last = lines[-1] if lines else ""
                 cname = f_name.replace('.log', '')
                 last_time = get_last_download_time(cname)
+                extra_fields = {}
+                with registry_lock:
+                    info = process_registry.get(cname)
+                    if info:
+                        extra_fields["proc_url"] = info.get("url", "")
+                        extra_fields["proc_type"] = info.get("type", "unknown")
                 results.append({
                     "id": cname,
                     "status": translate_status(last),
                     "raw": last,
                     "running": cname in running_names,
-                    "last_download": last_time or ""
+                    "last_download": last_time or "",
+                    **extra_fields
                 })
             except Exception:
                 continue
@@ -416,6 +467,14 @@ if __name__ == '__main__':
 
     threading.Thread(target=zombie_cleaner, daemon=True).start()
 
+    # ── PID 文件 ──
+    PID_FILE = os.path.join(BASE_DIR, '.server_pid')
+    try:
+        with open(PID_FILE, 'w') as f:
+            f.write(str(os.getpid()))
+    except OSError:
+        pass
+
     host, port = CONFIG['server']['host'], CONFIG['server']['port']
     print("=======================================")
     print(f" YT-DLP 监控服务 (优化版)")
@@ -431,3 +490,9 @@ if __name__ == '__main__':
         sys.exit(1)
     except KeyboardInterrupt:
         graceful_shutdown()
+    finally:
+        try:
+            if os.path.exists(PID_FILE):
+                os.remove(PID_FILE)
+        except OSError:
+            pass

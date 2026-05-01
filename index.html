@@ -100,7 +100,6 @@ document.getElementById("cards").addEventListener("click",function(e){
   },3000);
 });
 document.getElementById("cards").addEventListener("mouseleave",function(){
-  // 鼠标离开卡片区域时复原所有确认状态
   var btns=document.querySelectorAll(".del-btn.confirming");
   for(var i=0;i<btns.length;i++){
     clearTimeout(delTimers[btns[i].id]);
@@ -138,29 +137,25 @@ async function update(){
 
     var container=document.getElementById("cards");
     var ids=list.map(function(u){return safeId(u)});
-    // 清理
     for(var i=container.children.length-1;i>=0;i--){
       var c=container.children[i];
       if(c.id==="loading-placeholder"){c.remove();continue}
       if(c.id.startsWith("card-")&&ids.indexOf(c.id.replace("card-",""))===-1){c.remove()}
     }
-    // 频道计数
     var ce=document.getElementById("countBadge");
     if(list.length>0){ce.style.display="inline-block";ce.textContent=list.length+" 个频道"}
     else{ce.style.display="none"}
 
-    // 渲染卡片
     for(var i=0;i<list.length;i++){
       var u=list[i];
       var sid=ids[i];
       var name=nameFromUrl(u);
       var as=smap[name];
       if(document.getElementById("card-"+sid)){updateCard(sid,as);continue}
-      // 新建卡片
       var div=document.createElement("div");
       div.className="channel-card";
       div.id="card-"+sid;
-      div.innerHTML='<div class="card-top"><span class="channel-name" title="'+esc(u)+'">'+esc(name)+'</span><button class="del-btn" id="del-'+sid+'" data-url="'+esc(u)+'">移除</button></div><div class="status" id="st-'+sid+'"><span class="status-dot gray"></span> 等待中</div><div class="last-time" id="lt-"+sid+""></div><div class="progress"><div class="progress-fill" id="bar-'+sid+'"></div></div><div class="log-box" id="log-'+sid+'">正在加载...</div>';
+      div.innerHTML='<div class="card-top"><span class="channel-name" title="'+esc(u)+'">'+esc(name)+'</span><button class="del-btn" id="del-'+sid+'" data-url="'+esc(u)+'">移除</button></div><div class="status" id="st-'+sid+'"><span class="status-dot gray"></span> 等待中</div><div class="last-time" id="lt-'+sid+'"></div><div class="progress"><div class="progress-fill" id="bar-'+sid+'"></div></div><div class="log-box" id="log-'+sid+'">正在加载...</div>';
       container.appendChild(div);
       updateCard(sid,as);
     }
@@ -229,13 +224,70 @@ async function sendManual(){
 document.getElementById("urlInp").addEventListener("keydown",function(e){if(e.key==="Enter"){addUrl()}})
 document.getElementById("manualUrl").addEventListener("keydown",function(e){if(e.key==="Enter"){sendManual()}})
 
+// ===== 手动下载管理 =====
+var killPending={};
+var manCollapsed = false;
+function killManual(btn){
+  var name=btn.getAttribute("data-name");
+  if(!name||killPending[name])return;
+  if(!btn.classList.contains("confirming")){
+    btn.classList.add("confirming");
+    btn.textContent="确认终止?";
+    var tid=setTimeout(function(){btn.classList.remove("confirming");btn.textContent="终止并清除";},3000);
+    btn._confirmTimer=tid;
+    return;
+  }
+  clearTimeout(btn._confirmTimer);
+  killPending[name]=true;
+  btn.disabled=true;
+  btn.textContent="终止中...";
+    fetch("/api/clear_manual",{method:"POST",body:JSON.stringify({name:name})})
+    .then(function(r){return r.json()})
+    .then(function(d){
+      if(d.status==="ok"){toast("已清除: "+name,"success")}
+      else{toast(d.error||"失败","error")}
+    })
+    .catch(function(){toast("请求失败","error")})
+    .finally(function(){
+      delete killPending[name];
+      var card=btn.closest(".channel-card");
+      if(card)card.remove();
+      var mc=document.getElementById("man-cards");
+      if(mc&&mc.children.length===0){
+        document.getElementById("man-section").style.display="none";
+      }
+    });
+}
+
+function manUpdate(){
+  var e=document.getElementById('man-cards');
+  var s=document.getElementById('man-section');
+  if(!e||!s)return;
+  fetch('/api/status').then(function(r){return r.json()}).then(function(l){
+    var m=l.filter(function(x){return x.id.indexOf('manual_')===0||x.proc_type==='manual'});
+    if(!m.length){s.style.display='none';manCollapsed=false;return}
+    if(!manCollapsed){s.style.display=''}
+    e.innerHTML='';
+    for(var i=0;i<m.length;i++){
+      var v=m[i];
+      var url=v.proc_url||v.url||v.id;
+      var d=document.createElement('div');
+      d.className='channel-card';
+      d.id='mancard-'+i;
+      var percent='';
+      var pm=v.raw&&v.raw.match(/(\d+\.?\d*)%/);
+      if(pm){percent='<div class="progress"><div class="progress-fill" style="width:'+pm[1]+'%"></div></div>'}
+      d.innerHTML='<div class="card-top"><span class="channel-name" title="'+esc(v.raw||'')+'">'+esc((url||'').substring(0,80))+'</span><button class="del-btn" data-name="'+esc(v.id)+'" onclick="killManual(this)">终止并清除</button></div><div class="status"><span class="status-dot green"></span> '+esc(v.status)+'</div>'+percent+'<div class="log-box" style="height:60px">'+esc(v.raw)+'</div>';
+      e.appendChild(d)
+    }
+  }).catch(function(){})
+}
+
 // ===== 启动 =====
 update();
 setInterval(update,5000);
-function manUpdate(){var e=document.getElementById('man-cards');var s=document.getElementById('man-section');if(!e||!s)return;fetch('/api/status').then(function(r){return r.json()}).then(function(l){var m=l.filter(function(x){return x.id.indexOf('manual_')===0});if(!m.length){s.style.display='none';return}s.style.display='';e.innerHTML='';for(var i=0;i<m.length;i++){var v=m[i];var url=v.url||v.id;var d=document.createElement('div');d.className='channel-card';d.innerHTML='<div class="card-top"><span class="channel-name">'+esc(url)+'</span><button class="del-btn" onclick="this.parentElement.parentElement.remove()">✖</button></div><div class="status"><span class="status-dot green"></span> '+esc(v.status)+'</div><div class="log-box">'+esc(v.raw)+'</div>';e.appendChild(d)}}).catch(function(){})}
 setInterval(manUpdate,3000);
 manUpdate();
 </script>
-
 </body>
 </html>
