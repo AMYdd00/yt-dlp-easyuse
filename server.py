@@ -215,7 +215,7 @@ class MonitorHandler(SimpleHTTPRequestHandler):
         out_dir = os.path.join(BASE_DIR, CONFIG['paths']['manual_downloads'])
         os.makedirs(out_dir, exist_ok=True)
         output_template = os.path.join(out_dir, "[%(upload_date)s] %(title)s.%(ext)s")
-        cmd = build_ytdlp_cmd(url, output_template, extra_opts=["--playlist-items", "1"])
+        cmd = build_ytdlp_cmd(url, output_template, extra_opts=["--playlist-items", "1", "--no-download-archive"])
         try:
             name = "manual_"+str(int(time.time()))
             log_file = os.path.join(LOG_DIR, name + ".log")
