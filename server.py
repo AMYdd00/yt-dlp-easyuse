@@ -217,7 +217,10 @@ class MonitorHandler(SimpleHTTPRequestHandler):
         output_template = os.path.join(out_dir, "[%(upload_date)s] %(title)s.%(ext)s")
         cmd = build_ytdlp_cmd(url, output_template, extra_opts=["--playlist-items", "1"])
         try:
-            proc = subprocess.Popen(cmd, shell=False)
+            name = "manual_"+str(int(time.time()))
+            log_file = os.path.join(LOG_DIR, name + ".log")
+            with open(log_file, "w", encoding="utf-8") as lf:
+                proc = subprocess.Popen(cmd, stdout=lf, stderr=subprocess.STDOUT, shell=False)
             name = f"manual_{int(time.time())}"
             with registry_lock:
                 process_registry[name] = {

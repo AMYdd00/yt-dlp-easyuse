@@ -70,6 +70,7 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 <div class="main-header"><h2>频道列表</h2><span class="badge badge-ok" id="engineBadge">运行正常</span><span class="badge badge-count" id="countBadge"></span></div>
 <div class="grid" id="cards"><div id="loading-placeholder" style="grid-column:1/-1;text-align:center;padding:60px 0;color:var(--text-dim)"><div style="font-size:32px;margin-bottom:12px">📡</div><div>正在连接服务端...</div></div></div>
 </div>
+<div id="man-section" style="margin-top:30px;display:none"><div class="main-header"><h3>⬇️ 下载下载</h3></div><div class="grid" id="man-cards"></div></div>
 <script>
 // ===== 工具函数 =====
 function esc(s){var d=document.createElement("div");d.textContent=s;return d.innerHTML}
@@ -231,6 +232,9 @@ document.getElementById("manualUrl").addEventListener("keydown",function(e){if(e
 // ===== 启动 =====
 update();
 setInterval(update,5000);
+setInterval(manUpdate,3000);
+manUpdate();
 </script>
+<script>'function manUpdate(){var e=document.getElementById('man-cards');var s=document.getElementById('man-section');fetch('/api/status').then(function(r){return r.json()}).then(function(l){var m=l.filter(function(x){return x.id.indexOf('manual_')===0});if(!m.length){s.style.display='none';return}s.style.display='';e.innerHTML='';for(var i=0;i<m.length;i++){var v=m[i];var url=v.url||v.id;var d=document.createElement('div');d.className='channel-card';d.innerHTML='<div class="card-top"><span class="channel-name">'+esc(url)+'</span><button class="del-btn" onclick="this.parentElement.parentElement.remove()">✖</button></div><div class="status"><span class="status-dot green"></span> '+esc(v.status)+'</div><div class="log-box">'+esc(v.raw)+'</div>';e.appendChild(d)}}).catch(function(){})}'</script>
 </body>
 </html>
