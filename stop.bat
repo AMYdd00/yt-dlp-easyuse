@@ -1,6 +1,7 @@
 @echo off
 cd /d "%~dp0"
-echo 正在停止 YT-DLP 服务...
+chcp 65001 >nul
+echo Stopping YT-DLP...
 
 taskkill /f /im yt-dlp.exe >nul 2>nul
 for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":38848 "') do (
@@ -8,4 +9,4 @@ for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":38848 "') do (
 )
 
 echo . 2>nul 1>.stop_signal
-echo [INFO] YT-DLP 服务已停止
+echo [INFO] YT-DLP stopped
