@@ -41,14 +41,6 @@ ARCHIVE = os.path.join(BASE_DIR, PATHS["archive"])
 
 os.makedirs(LOG_DIR, exist_ok=True)
 
-# Create channel folders on startup
-for url in read_list():
-    name = extract_name(url)
-    out_dir = os.path.join(BASE_DIR, PATHS["downloads"], name)
-    os.makedirs(out_dir, exist_ok=True)
-    print(f"  Folder: {name}/")
-active_processes = {}
-
 def read_list():
     if os.path.exists(LIST_FILE):
         with open(LIST_FILE, encoding="utf-8") as f:
@@ -59,6 +51,14 @@ def extract_name(url):
     m = re.search(r"@([^/\\?]+)", url)
     raw = m.group(1) if m else (url.rsplit("/", 1)[-1] if "/" in url else "unknown")
     return urllib.parse.unquote(raw)
+
+# Create channel folders on startup
+for url in read_list():
+    name = extract_name(url)
+    out_dir = os.path.join(BASE_DIR, PATHS["downloads"], name)
+    os.makedirs(out_dir, exist_ok=True)
+    print(f"  Folder: {name}/")
+active_processes = {}
 
 def pid_file(name):
     return os.path.join(LOG_DIR, f"{name}.pid")

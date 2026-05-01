@@ -1,6 +1,7 @@
 @echo off
 cd /d "%~dp0"
-title YT-DLP ¼à¿ØÏµÍ³
+setlocal enabledelayedexpansion
+title YT-DLP ç›‘æ§ç³»ç»Ÿ
 
 taskkill /f /im yt-dlp.exe >nul 2>nul
 for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":38848 "') do (
@@ -16,29 +17,29 @@ if not exist logs mkdir logs
 if not exist Downloads mkdir Downloads
 if exist .stop_signal del .stop_signal
 
-echo [INFO] Æô¶¯ API...
+echo [INFO] å¯åŠ¨ API...
 start /b "" python server.py >nul 2>nul
-echo [INFO] Æô¶¯ worker...
+echo [INFO] å¯åŠ¨ worker...
 start /b "" python worker.py >nul 2>nul
 for /f "tokens=2" %%a in ('tasklist /fi "IMAGENAME eq python.exe" /fo csv /nh') do set wp=%%a
 echo !wp!>.worker_pid
-timeout /t 2 >nul
+ping -n 2 127.0.0.1 >nul
 
 echo.
 echo ========================
-echo  YT-DLP ¼à¿ØÏµÍ³
-echo  µØÖ·: http://localhost:38848
-echo  ¹Ø±ÕÇëÓÃ stop.bat
-echo  (×¢Òâ: Ö±½Ó¹Ø´°¿ÚºóÌ¨ÈÔÔÚÔËĞĞ)
+echo  YT-DLP ç›‘æ§ç³»ç»Ÿ
+echo  åœ°å€: http://localhost:38848
+echo  å…³é—­è¯·ç”¨ stop.bat
+echo  (æ³¨æ„: ç›´æ¥å…³çª—å£åå°ä»åœ¨è¿è¡Œ)
 echo ========================
 
 :loop
 if exist .stop_signal (
     del .stop_signal
-    echo [INFO] ¹Ø±Õ...
+    echo [INFO] å…³é—­...
     goto cleanup
 )
-timeout /t 3 >nul
+ping -n 2 127.0.0.1 >nul
 goto loop
 
 :cleanup
@@ -51,6 +52,6 @@ if exist .worker_pid (
     taskkill /f /pid !wp! >nul 2>nul
     del .worker_pid
 )
-echo [INFO] ÒÑÍ£Ö¹
-timeout /t 2 >nul
+echo [INFO] å·²åœæ­¢
+endlocal
 exit
