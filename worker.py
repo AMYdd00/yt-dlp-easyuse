@@ -91,7 +91,7 @@ def start_download(name, url):
     pf = pid_file(name)
     out_dir = os.path.join(BASE_DIR, PATHS["downloads"], name)
     os.makedirs(out_dir, exist_ok=True)
-    out_tpl = os.path.join(out_dir, "[%%(upload_date)s] %%(title)s.%%(ext)s")
+    out_tpl = os.path.join(out_dir, "[%(upload_date)s] %(title)s.%(ext)s")
 
     cmd = [
         "yt-dlp",
