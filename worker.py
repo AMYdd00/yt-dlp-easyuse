@@ -86,6 +86,23 @@ def is_running(name):
         pass
     return False
 
+DOWNLOAD_TIMES_FILE = os.path.join(BASE_DIR, 'download_times.json')
+
+def save_download_time(name):
+    """记录频道最近一次下载完成的时间"""
+    now = datetime.now().strftime("%Y-%m-%d %H:%M")
+    try:
+        if os.path.exists(DOWNLOAD_TIMES_FILE):
+            with open(DOWNLOAD_TIMES_FILE, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+        else:
+            data = {}
+        data[name] = now
+        with open(DOWNLOAD_TIMES_FILE, 'w', encoding='utf-8') as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+    except Exception:
+        pass
+
 def start_download(name, url):
     log_file = os.path.join(LOG_DIR, f"{name}.log")
     pf = pid_file(name)
@@ -139,6 +156,15 @@ def start_download(name, url):
         except Exception:
             pass
         active_processes.pop(name, None)
+        # 检查日志，如果下载成功则记录时间
+        try:
+            with open(log_file, 'r', encoding='utf-8', errors='ignore') as lf:
+                log_content = lf.read()
+            if '[download] 100%' in log_content or '[Merger]' in log_content:
+                save_download_time(name)
+                print(f"[✓] 下载完成已记录: {name}")
+        except Exception:
+            pass
         print(f"[-] 已完成: {name}")
 
     threading.Thread(target=cleanup, daemon=True).start()

@@ -79,31 +79,63 @@ def rotate_log(log_path):
         except OSError:
             pass
 
+DOWNLOAD_TIMES_FILE = os.path.join(BASE_DIR, 'download_times.json')
+
 def get_last_download_time(channel_name):
-    """获取频道最近一次下载时间，支持 URL 编码/解码、多种视频格式"""
+    """获取频道最近一次下载时间
+    
+    策略：
+    1. 优先从下载目录查找视频文件（含 yt-dlp 临时文件 .temp.mp4, .f*.mp4 等）
+       → 下载过程中也能显示最新活动
+    2. 如果下载目录没有视频文件（文件被移走），则从 download_times.json 读取
+       → 由 worker.py 在下载完成时写入，文件移走后依然可追溯
+    """
     decoded = unquote(channel_name)
     candidates = [decoded]
     if decoded != channel_name:
         candidates.append(channel_name)
+    
     latest_time = None
-    video_exts = (".mp4", ".mkv", ".webm", ".mov", ".avi", ".flv")
+    
+    # ── 策略1（优先）：从下载目录查找视频文件 ──
+    video_suffixes = (
+        ".mp4", ".mkv", ".webm", ".mov", ".avi", ".flv",
+        ".m4a", ".m4v", ".ts", ".aac",
+    )
     for cname in candidates:
         download_dir = os.path.join(BASE_DIR, "Downloads", cname)
         if not os.path.exists(download_dir):
             continue
         try:
             for item in os.listdir(download_dir):
-                if item.lower().endswith(video_exts):
-                    fpath = os.path.join(download_dir, item)
-                    try:
-                        mtime = os.path.getmtime(fpath)
-                        if latest_time is None or mtime > latest_time:
-                            latest_time = mtime
-                    except OSError:
-                        continue
+                lower = item.lower()
+                for suf in video_suffixes:
+                    if suf in lower:
+                        fpath = os.path.join(download_dir, item)
+                        try:
+                            mtime = os.path.getmtime(fpath)
+                            if latest_time is None or mtime > latest_time:
+                                latest_time = mtime
+                        except OSError:
+                            continue
+                        break
         except OSError:
             continue
-    if latest_time:
+    
+    # ── 策略2（后备）：下载目录无视频文件时，从 download_times.json 读取 ──
+    if latest_time is None:
+        try:
+            if os.path.exists(DOWNLOAD_TIMES_FILE):
+                with open(DOWNLOAD_TIMES_FILE, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                for cname in candidates:
+                    if cname in data:
+                        return data[cname]  # 已经是格式化字符串
+        except (OSError, json.JSONDecodeError):
+            pass
+    
+    # 策略1返回的是 mtime 浮点数，需要格式化
+    if latest_time is not None:
         return datetime.fromtimestamp(latest_time).strftime("%Y-%m-%d %H:%M")
     return None
 
