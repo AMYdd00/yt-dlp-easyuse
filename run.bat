@@ -1,9 +1,9 @@
 @echo off
 setlocal enabledelayedexpansion
 cd /d "%~dp0"
-title YT-DLP ç›‘æ§ç³»ç»Ÿ
+title YT-DLP ¼à¿ØÏµÍ³
 
-:: æ¸…ç†æ®‹ç•™
+:: ÇåÀí²ĞÁô
 if exist .server_pid (
     set /p old_pid=<.server_pid
     taskkill /f /pid !old_pid! >nul 2>nul
@@ -17,26 +17,26 @@ if exist .stop_signal del .stop_signal
 if not exist logs mkdir logs
 if not exist Downloads mkdir Downloads
 
-echo [INFO] å¯åŠ¨ API...
+echo [INFO] Æô¶¯ API...
 start /b "" python server.py >nul 2>nul
-echo [INFO] å¯åŠ¨ worker...
+echo [INFO] Æô¶¯ worker...
 start /b "" python worker.py >nul 2>nul
 timeout /t 2 >nul
 
 echo ================================
-echo   YT-DLP ç›‘æ§ç³»ç»Ÿ
-echo   åœ°å€: http://localhost:38848
-echo   å…³é—­è¯·ç”¨ stop.bat
-echo   æœ¬çª—å£å¯éšæ—¶å…³é—­, åå°ç»§ç»­è¿è¡Œ
+echo   YT-DLP ¼à¿ØÏµÍ³
+echo   µØÖ·: http://localhost:38848
+echo   ¹Ø±ÕÇëÓÃ stop.bat
+echo   ±¾´°¿Ú¿ÉËæÊ±¹Ø±Õ, ºóÌ¨¼ÌĞøÔËĞĞ
 echo ================================
 
 :loop
-:: æ£€æµ‹åå°è¿›ç¨‹æ˜¯å¦å­˜æ´»
+:: ¼ì²âºóÌ¨½ø³ÌÊÇ·ñ´æ»î
 if exist .server_pid (
     set /p pid=<.server_pid
     tasklist /fi "PID eq !pid!" 2>nul | findstr /i "python" >nul 2>nul
     if errorlevel 1 (
-        echo [WARN] API æœåŠ¡å·²å¼‚å¸¸é€€å‡º (PID: !pid!), æ­£åœ¨é‡å¯...
+        echo [WARN] API ·şÎñÒÑÒì³£ÍË³ö (PID: !pid!), ÕıÔÚÖØÆô...
         start /b "" python server.py >nul 2>nul
         timeout /t 2 >nul
     )
@@ -45,7 +45,7 @@ if exist .worker_pid (
     set /p pid=<.worker_pid
     tasklist /fi "PID eq !pid!" 2>nul | findstr /i "python" >nul 2>nul
     if errorlevel 1 (
-        echo [WARN] Worker å·²å¼‚å¸¸é€€å‡º (PID: !pid!), æ­£åœ¨é‡å¯...
+        echo [WARN] Worker ÒÑÒì³£ÍË³ö (PID: !pid!), ÕıÔÚÖØÆô...
         start /b "" python worker.py >nul 2>nul
         timeout /t 2 >nul
     )
@@ -67,5 +67,5 @@ if exist .worker_pid (
     taskkill /f /pid !pid! >nul 2>nul
 )
 taskkill /f /im yt-dlp.exe >nul 2>nul
-echo [INFO] å·²åœæ­¢
+echo [INFO] ÒÑÍ£Ö¹
 exit
