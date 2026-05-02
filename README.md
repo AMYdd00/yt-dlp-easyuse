@@ -207,5 +207,5 @@ index.html <── server.py <────────┘
 
 - [yt-dlp](https://github.com/yt-dlp/yt-dlp) — 强大的核心下载引擎
 - [FFmpeg](https://ffmpeg.org) — 无敌的音视频处理工具
-- [Gemini](https://gemini.google.com) — 强大的AI，生成初始代码
+- [Gemini](https://gemini.google.com) — 强大的AI，帮助实现项目最初框架
 - [DeepSeek V4 Pro](https://chat.deepseek.com) — 架构重构、Python 调度器、Web UI 优化、错误修复与稳定性增强

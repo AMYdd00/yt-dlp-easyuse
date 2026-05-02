@@ -466,11 +466,26 @@ class MonitorHandler(SimpleHTTPRequestHandler):
 # ── 后台任务 ──────────────────────────────────────────────
 def zombie_cleaner():
     while True:
-        time.sleep(120)
+        time.sleep(30)
         with registry_lock:
             dead = [n for n, i in process_registry.items() if i["process"].poll() is not None]
             for n in dead:
-                del process_registry[n]
+                info = process_registry.pop(n, None)
+                if info and info.get("type") == "manual":
+                    # 手动下载完成后自动清理日志
+                    threading.Thread(target=lambda name=n: _clean_manual_log(name), daemon=True).start()
+
+def _clean_manual_log(name):
+    """删除手动下载任务的日志和PID文件"""
+    time.sleep(2)  # 等日志写完
+    log_file = os.path.join(LOG_DIR, f"{name}.log")
+    pid_file = os.path.join(LOG_DIR, f"{name}.pid")
+    for fp in (log_file, pid_file):
+        try:
+            if os.path.exists(fp):
+                os.remove(fp)
+        except OSError:
+            pass
 
 def graceful_shutdown(*args):
     print("\n[系统] 正在关闭所有任务...")
