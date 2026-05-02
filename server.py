@@ -348,7 +348,7 @@ class MonitorHandler(SimpleHTTPRequestHandler):
             pass
 
     def _clear_manual(self, data):
-        """先杀进程，再删日志和下载垃圾"""
+        """先杀进程树（含子进程），再删日志和下载垃圾"""
         name = data.get('name', '')
         if not name:
             self._send_json({"error": "Name required"}, 400)
@@ -358,10 +358,14 @@ class MonitorHandler(SimpleHTTPRequestHandler):
             if info:
                 proc = info["process"]
                 if proc.poll() is None:
-                    proc.terminate()
+                    # 用 taskkill /T 杀整个进程树（含 yt-dlp 启动的 ffmpeg 等子进程）
+                    # 只杀 manual 类型的进程，不影响其他频道监控
                     try:
-                        proc.wait(timeout=10)
-                    except subprocess.TimeoutExpired:
+                        subprocess.run(
+                            ["taskkill", "/F", "/T", "/PID", str(proc.pid)],
+                            capture_output=True, timeout=5
+                        )
+                    except Exception:
                         proc.kill()
         # 等一会让文件释放
         time.sleep(1)
