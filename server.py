@@ -307,18 +307,44 @@ class MonitorHandler(SimpleHTTPRequestHandler):
                 self._send_json({"status": "ok", "message": "Already stopped"})
 
     def _try_clean_log(self, name):
-        """删除指定任务的日志文件"""
-        log_file = os.path.join(LOG_DIR, f"{name}.log")
-        pid_file = os.path.join(LOG_DIR, f"{name}.pid")
-        for fp in (log_file, pid_file):
+        """删除指定任务的日志和PID文件"""
+        for fp in (os.path.join(LOG_DIR, f"{name}.log"),
+                   os.path.join(LOG_DIR, f"{name}.pid")):
             try:
                 if os.path.exists(fp):
                     os.remove(fp)
             except OSError:
                 pass
 
+    def _clean_manual_downloads(self):
+        """清理手动下载目录中的 yt-dlp 临时垃圾文件
+        
+        yt-dlp 下载过程中会产生：
+        - .part 文件：未完成的下载片段
+        - .ytdl 文件：下载状态信息
+        - *.f[数字].mp4 / *.f[数字].m4a：分离的音视频流（下载完但未合并）
+        - *.temp.mp4：合并过程中的临时文件
+        """
+        manual_dir = os.path.join(BASE_DIR, CONFIG['paths']['manual_downloads'])
+        if not os.path.isdir(manual_dir):
+            return
+        garbage_suffixes = ('.part', '.ytdl', '.temp.mp4')
+        try:
+            for fname in os.listdir(manual_dir):
+                lower = fname.lower()
+                for suf in garbage_suffixes:
+                    if suf in lower:
+                        fpath = os.path.join(manual_dir, fname)
+                        try:
+                            os.remove(fpath)
+                        except OSError:
+                            pass
+                        break
+        except OSError:
+            pass
+
     def _clear_manual(self, data):
-        """先杀进程，再删日志"""
+        """先杀进程，再删日志和下载垃圾"""
         name = data.get('name', '')
         if not name:
             self._send_json({"error": "Name required"}, 400)
@@ -334,6 +360,7 @@ class MonitorHandler(SimpleHTTPRequestHandler):
                     except subprocess.TimeoutExpired:
                         proc.kill()
         self._try_clean_log(name)
+        self._clean_manual_downloads()
         self._send_json({"status": "ok"})
 
     # ── GET ──

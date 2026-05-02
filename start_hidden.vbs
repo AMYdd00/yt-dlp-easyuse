@@ -1,1 +1,1 @@
-CreateObject("WScript.Shell").Run "cmd /c run.bat", 0, False
+CreateObject("WScript.Shell").Run "run.bat", 0, False
