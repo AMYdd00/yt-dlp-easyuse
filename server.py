@@ -319,27 +319,31 @@ class MonitorHandler(SimpleHTTPRequestHandler):
     def _clean_manual_downloads(self):
         """清理手动下载目录中的 yt-dlp 临时垃圾文件
         
-        yt-dlp 下载过程中会产生：
+        yt-dlp 下载过程中会产生各种临时文件：
         - .part 文件：未完成的下载片段
         - .ytdl 文件：下载状态信息
-        - *.f[数字].mp4 / *.f[数字].m4a：分离的音视频流（下载完但未合并）
+        - *.f[数字].mp4 / *.f[数字].m4a / *.f[数字].webm：分离的音视频流
         - *.temp.mp4：合并过程中的临时文件
+        - 其他非 .mp4 的零碎文件
+        
+        策略：删除所有不是完整 .mp4 的文件（手动下载目标格式就是 mp4）
         """
         manual_dir = os.path.join(BASE_DIR, CONFIG['paths']['manual_downloads'])
         if not os.path.isdir(manual_dir):
             return
-        garbage_suffixes = ('.part', '.ytdl', '.temp.mp4')
         try:
             for fname in os.listdir(manual_dir):
+                fpath = os.path.join(manual_dir, fname)
+                if not os.path.isfile(fpath):
+                    continue
                 lower = fname.lower()
-                for suf in garbage_suffixes:
-                    if suf in lower:
-                        fpath = os.path.join(manual_dir, fname)
-                        try:
-                            os.remove(fpath)
-                        except OSError:
-                            pass
-                        break
+                # 保留完整 .mp4 文件，删除其他所有文件（临时文件、零碎片段等）
+                if lower.endswith('.mp4') and not any(x in lower for x in ('.f', '.part', '.temp', '.ytdl')):
+                    continue
+                try:
+                    os.remove(fpath)
+                except OSError:
+                    pass
         except OSError:
             pass
 
@@ -359,6 +363,8 @@ class MonitorHandler(SimpleHTTPRequestHandler):
                         proc.wait(timeout=10)
                     except subprocess.TimeoutExpired:
                         proc.kill()
+        # 等一会让文件释放
+        time.sleep(1)
         self._try_clean_log(name)
         self._clean_manual_downloads()
         self._send_json({"status": "ok"})
