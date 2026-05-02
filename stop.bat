@@ -1,4 +1,5 @@
 @echo off
+setlocal enabledelayedexpansion
 cd /d "%~dp0"
 echo [INFO] 正在停止 YT-DLP 服务...
 
@@ -7,11 +8,13 @@ if exist .server_pid (
     set /p pid=<.server_pid
     taskkill /f /pid !pid! >nul 2>nul
     echo [INFO] 已停止 API 服务 (PID: !pid!)
+    del .server_pid
 )
 if exist .worker_pid (
     set /p pid=<.worker_pid
     taskkill /f /pid !pid! >nul 2>nul
     echo [INFO] 已停止 Worker (PID: !pid!)
+    del .worker_pid
 )
 
 :: 停止 yt-dlp 下载进程
